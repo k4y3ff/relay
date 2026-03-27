@@ -36,7 +36,19 @@ export default function TerminalEmbed({ worktreePath }: Props) {
       window.relay.invoke('terminal:write', { worktreePath, data });
     });
 
+    const refit = () => {
+      if (!container.offsetWidth || !container.offsetHeight) return;
+      fitAddon.fit();
+      window.relay.invoke('terminal:resize', {
+        worktreePath,
+        cols: term.cols,
+        rows: term.rows,
+      });
+    };
+    window.addEventListener('terminal:refit', refit);
+
     const observer = new ResizeObserver(() => {
+      if (!container.offsetWidth || !container.offsetHeight) return;
       fitAddon.fit();
       window.relay.invoke('terminal:resize', {
         worktreePath,
@@ -47,6 +59,7 @@ export default function TerminalEmbed({ worktreePath }: Props) {
     observer.observe(container);
 
     return () => {
+      window.removeEventListener('terminal:refit', refit);
       window.relay.off('terminal:data', onData);
       onTermData.dispose();
       observer.disconnect();

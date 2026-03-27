@@ -1,9 +1,17 @@
+import { useEffect } from 'react';
 import { useRepo } from '../../context/RepoContext';
 import TerminalEmbed from '../chat/TerminalEmbed';
 import DiffViewer from '../chat/DiffViewer';
 
 export default function ChatPane() {
   const { activeWorktreePath, activeDiffFile } = useRepo();
+
+  // When returning from diff mode, signal TerminalEmbed to re-fit its dimensions.
+  useEffect(() => {
+    if (!activeDiffFile) {
+      window.dispatchEvent(new CustomEvent('terminal:refit'));
+    }
+  }, [activeDiffFile]);
 
   if (!activeWorktreePath) {
     return (
