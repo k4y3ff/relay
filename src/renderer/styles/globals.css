@@ -137,44 +137,125 @@ body,
   to { transform: rotate(360deg); }
 }
 
-/* ── diff2html overrides ────────────────────────────────────── */
+/* ── diff2html dark theme overrides ─────────────────────────── */
+/* Scoped to .diff-content which wraps the d2h-generated HTML   */
 
-.diff2html-wrapper .d2h-wrapper {
+.diff-content {
   font-family: var(--font-mono);
   font-size: 12px;
+  background: var(--color-mac-bg);
 }
 
-.diff2html-wrapper .d2h-file-header {
+/* File wrapper + header */
+.diff-content .d2h-file-wrapper {
+  border: 1px solid var(--color-mac-border);
+  background: var(--color-mac-bg);
+  margin-bottom: 8px;
+}
+
+.diff-content .d2h-file-header {
   background: var(--color-mac-surface2);
-  border-color: var(--color-mac-border);
-  color: var(--color-mac-text);
-  padding: 6px 12px;
-}
-
-.diff2html-wrapper .d2h-code-wrapper {
-  border-color: var(--color-mac-border);
-}
-
-.diff2html-wrapper .d2h-diff-table {
-  font-family: var(--font-mono);
-}
-
-.diff2html-wrapper .d2h-del {
-  background: rgba(239, 68, 68, 0.15);
-}
-
-.diff2html-wrapper .d2h-ins {
-  background: rgba(74, 222, 128, 0.12);
-}
-
-.diff2html-wrapper .d2h-code-linenumber {
+  border-bottom: 1px solid var(--color-mac-border);
   color: var(--color-mac-muted);
+  padding: 5px 10px;
+}
+
+.diff-content .d2h-file-name {
+  color: var(--color-mac-text);
+}
+
+/* Code table */
+.diff-content .d2h-diff-table {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  width: 100%;
+  background: var(--color-mac-bg);
+}
+
+.diff-content td {
+  color: var(--color-mac-text);
   background: var(--color-mac-bg);
   border-color: var(--color-mac-border);
 }
 
-.diff2html-wrapper .d2h-code-line {
+/* Line numbers */
+.diff-content .d2h-code-linenumber {
+  color: var(--color-mac-muted);
+  background: var(--color-mac-surface);
+  border-right: 1px solid var(--color-mac-border);
+  width: 40px;
+  min-width: 40px;
+  padding: 0 6px;
+  user-select: none;
+}
+
+/* Context lines (unchanged) */
+.diff-content .d2h-cntx td {
+  background: var(--color-mac-bg);
   color: var(--color-mac-text);
+}
+.diff-content .d2h-cntx .d2h-code-linenumber {
+  background: var(--color-mac-surface);
+}
+
+/* Deletion rows */
+.diff-content .d2h-del td {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+.diff-content .d2h-del .d2h-code-linenumber {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-right-color: rgba(239, 68, 68, 0.3);
+}
+.diff-content .d2h-del .d2h-code-line-prefix {
+  color: #f87171;
+}
+/* Character-level deletion highlight */
+.diff-content .d2h-del del {
+  background: rgba(239, 68, 68, 0.35);
+  text-decoration: none;
+}
+
+/* Insertion rows */
+.diff-content .d2h-ins td {
+  background: rgba(74, 222, 128, 0.08);
+  color: #86efac;
+}
+.diff-content .d2h-ins .d2h-code-linenumber {
+  background: rgba(74, 222, 128, 0.14);
+  color: #4ade80;
+  border-right-color: rgba(74, 222, 128, 0.25);
+}
+.diff-content .d2h-ins .d2h-code-line-prefix {
+  color: #4ade80;
+}
+/* Character-level insertion highlight */
+.diff-content .d2h-ins ins {
+  background: rgba(74, 222, 128, 0.28);
+  text-decoration: none;
+}
+
+/* Hunk header (@@ ... @@) */
+.diff-content .d2h-info td {
+  background: rgba(10, 132, 255, 0.08);
+  color: var(--color-mac-muted);
+  font-style: italic;
+}
+.diff-content .d2h-info .d2h-code-linenumber {
+  background: rgba(10, 132, 255, 0.12);
+}
+
+/* Empty placeholder */
+.diff-content .d2h-code-line-ctn {
+  color: inherit;
+}
+
+/* Tag badges (e.g. CHANGED / RENAMED) */
+.diff-content .d2h-tag {
+  background: var(--color-mac-surface2);
+  color: var(--color-mac-muted);
+  border: 1px solid var(--color-mac-border);
 }
 
 /* ── Changed Files Pane ────────────────────────────────────── */
