@@ -4,7 +4,7 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { store } from './store.js';
 import type { Repo, Worktree, PersistedRepo, ChangedFile } from '../renderer/types/repo.js';
-import type { TerminalManager } from './terminal.js';
+import type { ClaudeManager } from './claude.js';
 import type { ShellManager } from './shell.js';
 
 const execFileAsync = promisify(execFile);
@@ -65,7 +65,7 @@ async function assembleRepo(persisted: PersistedRepo): Promise<Repo> {
 
 // ── IPC handlers ───────────────────────────────────────────────────────────
 
-export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManager, shellManager: ShellManager): void {
+export function registerIpcHandlers(win: BrowserWindow, claudeManager: ClaudeManager, shellManager: ShellManager): void {
   // repos:list — hydrate all repos from store
   ipcMain.handle('repos:list', async (): Promise<Repo[]> => {
     const persisted = store.get('repos');
@@ -233,28 +233,43 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
-  // ── Terminal channels ──────────────────────────────────────────────────────
+  // ── Claude channels ────────────────────────────────────────────────────────
+
+  ipcMain.handle('claude:validate', async (): Promise<{ installed: boolean }> => {
+    return claudeManager.validate();
+  });
 
   ipcMain.handle(
-    'terminal:create',
-    (_event, { worktreePath, cols, rows }: { worktreePath: string; cols: number; rows: number }): void => {
-      terminal.create(worktreePath, cols, rows);
+    'claude:send',
+    (_event, { worktreePath, text }: { worktreePath: string; text: string }): void => {
+      claudeManager.send(worktreePath, text);
     }
   );
 
   ipcMain.handle(
-    'terminal:write',
-    (_event, { worktreePath, data }: { worktreePath: string; data: string }): void => {
-      terminal.write(worktreePath, data);
+    'claude:stop',
+    (_event, { worktreePath }: { worktreePath: string }): void => {
+      claudeManager.stop(worktreePath);
     }
   );
 
   ipcMain.handle(
-    'terminal:resize',
-    (_event, { worktreePath, cols, rows }: { worktreePath: string; cols: number; rows: number }): void => {
-      terminal.resize(worktreePath, cols, rows);
+    'claude:new-chat',
+    (_event, { worktreePath }: { worktreePath: string }): void => {
+      claudeManager.newChat(worktreePath);
     }
   );
+
+  ipcMain.handle(
+    'claude:persist-sessions',
+    (_event, { sessions }: { sessions: Record<string, unknown[]> }): void => {
+      store.set('chatSessions', sessions as Record<string, import('../renderer/types/chat.js').ChatMessage[]>);
+    }
+  );
+
+  ipcMain.handle('claude:load-sessions', (): Record<string, unknown[]> => {
+    return store.get('chatSessions') as Record<string, unknown[]>;
+  });
 
   // ── Shell channels (per-tab PTY sessions for the terminal pane) ────────────
 
