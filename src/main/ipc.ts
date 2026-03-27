@@ -4,8 +4,7 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { store } from './store.js';
 import type { Repo, Worktree, PersistedRepo } from '../renderer/types/repo.js';
-import type { PersistedChatSession } from '../renderer/types/chat.js';
-import type { ClaudeManager } from './claude.js';
+import type { TerminalManager } from './terminal.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -65,7 +64,7 @@ async function assembleRepo(persisted: PersistedRepo): Promise<Repo> {
 
 // ── IPC handlers ───────────────────────────────────────────────────────────
 
-export function registerIpcHandlers(win: BrowserWindow, claude: ClaudeManager): void {
+export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManager): void {
   // repos:list — hydrate all repos from store
   ipcMain.handle('repos:list', async (): Promise<Repo[]> => {
     const persisted = store.get('repos');
@@ -75,7 +74,6 @@ export function registerIpcHandlers(win: BrowserWindow, claude: ClaudeManager): 
 
   // repos:add — validate folder, persist, return assembled Repo
   ipcMain.handle('repos:add', async (_event, { folderPath }: { folderPath: string }): Promise<Repo> => {
-    // Validate it's a git repo and get canonical root
     let rootPath: string;
     try {
       const { stdout } = await execFileAsync(
@@ -88,10 +86,8 @@ export function registerIpcHandlers(win: BrowserWindow, claude: ClaudeManager): 
       throw new Error('NOT_A_GIT_REPO');
     }
 
-    // Check not already added
     const existing = store.get('repos');
     if (existing.some((r) => r.id === rootPath)) {
-      // Already present — just return it assembled
       return assembleRepo({ id: rootPath, rootPath });
     }
 
@@ -128,7 +124,6 @@ export function registerIpcHandlers(win: BrowserWindow, claude: ClaudeManager): 
 
       await execFileAsync('git', args, { cwd: repo.rootPath });
 
-      // Find the newly added worktree in the list
       const worktrees = await getWorktrees(repo.rootPath);
       const newWt = worktrees.find((wt) => wt.path === worktreePath);
       if (!newWt) throw new Error('WORKTREE_NOT_FOUND_AFTER_ADD');
@@ -167,85 +162,26 @@ export function registerIpcHandlers(win: BrowserWindow, claude: ClaudeManager): 
     shell.openPath(p);
   });
 
-  // ── Claude Code channels ──────────────────────────────────────────────────
+  // ── Terminal channels ──────────────────────────────────────────────────────
 
   ipcMain.handle(
-    'claude:send-message',
-    (_event, { worktreePath, text }: { worktreePath: string; text: string }): void => {
-      claude.sendMessage(worktreePath, text);
+    'terminal:create',
+    (_event, { worktreePath, cols, rows }: { worktreePath: string; cols: number; rows: number }): void => {
+      terminal.create(worktreePath, cols, rows);
     }
   );
 
   ipcMain.handle(
-    'claude:new-chat',
-    (_event, { worktreePath }: { worktreePath: string }): void => {
-      claude.newChat(worktreePath);
+    'terminal:write',
+    (_event, { worktreePath, data }: { worktreePath: string; data: string }): void => {
+      terminal.write(worktreePath, data);
     }
   );
 
   ipcMain.handle(
-    'claude:stop',
-    (_event, { worktreePath }: { worktreePath: string }): void => {
-      claude.stop(worktreePath);
-    }
-  );
-
-  ipcMain.handle(
-    'claude:get-diff',
-    async (
-      _event,
-      { worktreePath, filePath }: { worktreePath: string; filePath: string }
-    ): Promise<string> => {
-      try {
-        const { stdout } = await execFileAsync(
-          'git',
-          ['diff', 'HEAD', '--', filePath],
-          { cwd: worktreePath }
-        );
-        // If no staged/unstaged diff, try showing untracked file content
-        if (!stdout) {
-          const { stdout: catOut } = await execFileAsync(
-            'git',
-            ['diff', '--cached', '--', filePath],
-            { cwd: worktreePath }
-          );
-          return catOut;
-        }
-        return stdout;
-      } catch {
-        return '';
-      }
-    }
-  );
-
-  ipcMain.handle(
-    'claude:validate',
-    async (): Promise<{ ok: boolean; version?: string }> => {
-      try {
-        const { stdout } = await execFileAsync('claude', ['--version']);
-        return { ok: true, version: stdout.trim() };
-      } catch {
-        return { ok: false };
-      }
-    }
-  );
-
-  // ── Chat session persistence ──────────────────────────────────────────────
-
-  ipcMain.handle(
-    'chat:sessions:load',
-    (_event, { worktreePath }: { worktreePath: string }): PersistedChatSession | null => {
-      const sessions = store.get('chatSessions');
-      return sessions.find((s) => s.worktreePath === worktreePath) ?? null;
-    }
-  );
-
-  ipcMain.handle(
-    'chat:sessions:save',
-    (_event, { session }: { session: PersistedChatSession }): void => {
-      const sessions = store.get('chatSessions');
-      const filtered = sessions.filter((s) => s.worktreePath !== session.worktreePath);
-      store.set('chatSessions', [...filtered, session]);
+    'terminal:resize',
+    (_event, { worktreePath, cols, rows }: { worktreePath: string; cols: number; rows: number }): void => {
+      terminal.resize(worktreePath, cols, rows);
     }
   );
 }

@@ -1,12 +1,8 @@
 import { useRepo } from '../../context/RepoContext';
-import { useChat } from '../../context/ChatContext';
-import MessageList from '../chat/MessageList';
-import ChatInput from '../chat/ChatInput';
-import DiffViewer from '../chat/DiffViewer';
+import TerminalEmbed from '../chat/TerminalEmbed';
 
 export default function ChatPane() {
   const { activeWorktreePath } = useRepo();
-  const { diffView } = useChat();
 
   if (!activeWorktreePath) {
     return (
@@ -16,18 +12,9 @@ export default function ChatPane() {
     );
   }
 
-  if (diffView) {
-    return (
-      <div className="chat-pane">
-        <DiffViewer />
-      </div>
-    );
-  }
-
   return (
     <div className="chat-pane">
-      <MessageList worktreePath={activeWorktreePath} />
-      <ChatInput worktreePath={activeWorktreePath} />
+      <TerminalEmbed worktreePath={activeWorktreePath} />
     </div>
   );
 }
