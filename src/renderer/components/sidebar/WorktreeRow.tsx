@@ -63,16 +63,18 @@ export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
       }`}
     >
       <span className="truncate flex-1 ml-4">{worktree.branch}</span>
-      {stats && (
-        <span className="flex gap-1 text-[11px] font-mono mr-1 shrink-0">
-          {stats.added > 0 && <span style={{ color: '#4ade80' }}>+{stats.added}</span>}
-          {stats.deleted > 0 && <span style={{ color: '#f87171' }}>-{stats.deleted}</span>}
-          {stats.added === 0 && stats.deleted === 0 && (
-            <span style={{ color: 'var(--color-mac-muted)' }}>{stats.fileCount}~</span>
-          )}
-        </span>
-      )}
-      <OverflowMenu items={menuItems} />
+      <div className="relative shrink-0 w-5 flex items-center justify-end">
+        {stats && (
+          <span className="absolute right-0 flex gap-1 text-[11px] font-mono whitespace-nowrap group-hover:hidden">
+            {stats.added > 0 && <span style={{ color: '#4ade80' }}>+{stats.added}</span>}
+            {stats.deleted > 0 && <span style={{ color: '#f87171' }}>-{stats.deleted}</span>}
+            {stats.added === 0 && stats.deleted === 0 && (
+              <span style={{ color: 'var(--color-mac-muted)' }}>{stats.fileCount}~</span>
+            )}
+          </span>
+        )}
+        <OverflowMenu items={menuItems} />
+      </div>
     </div>
   );
 }
