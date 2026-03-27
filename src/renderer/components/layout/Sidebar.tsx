@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useRepo } from '../../context/RepoContext';
 import RepoSection from '../sidebar/RepoSection';
 import AddWorktreeModal from '../sidebar/AddWorktreeModal';
 
-export default function Sidebar() {
+export default function Sidebar({ style }: { style?: CSSProperties }) {
   const { repos, loading, addRepo } = useRepo();
   const [pendingAddWorktree, setPendingAddWorktree] = useState<string | null>(null);
 
   return (
-    <div className="sidebar flex flex-col h-full">
+    <div className="sidebar flex flex-col h-full" style={style}>
       {/* Repo list */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {loading && (
