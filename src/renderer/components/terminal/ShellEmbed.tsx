@@ -37,7 +37,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
     const container = containerRef.current;
     if (!container) return;
 
-    const term = new Terminal({ allowProposedApi: true, copyOnSelect: true });
+    const term = new Terminal({ allowProposedApi: true, copyOnSelect: true, fontSize: 13 });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);

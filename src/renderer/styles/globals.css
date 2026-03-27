@@ -338,7 +338,7 @@ body,
   border: none;
   cursor: pointer;
   color: var(--color-mac-text);
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
   text-align: left;
   -webkit-app-region: no-drag;
