@@ -1,12 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
-// xterm CSS is already imported by TerminalEmbed; no need to re-import
 
 interface Props {
   tabId: string;
   cwd: string;
   active: boolean;
+  command?: string;
 }
 
 export interface ShellEmbedHandle {
@@ -14,7 +14,7 @@ export interface ShellEmbedHandle {
   refit(): void;
 }
 
-const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, ref) => {
+const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active, command }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -46,7 +46,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
     termRef.current = term;
     fitAddonRef.current = fitAddon;
 
-    window.relay.invoke('shell:create', { tabId, cwd, cols: term.cols, rows: term.rows });
+    window.relay.invoke('shell:create', { tabId, cwd, cols: term.cols, rows: term.rows, command });
 
     const onData = (payload: unknown) => {
       const { tabId: id, data } = payload as { tabId: string; data: string };

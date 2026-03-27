@@ -9,11 +9,12 @@ export class ShellManager {
     this.win = win;
   }
 
-  create(tabId: string, cwd: string, cols: number, rows: number): void {
-    if (this.ptys.has(tabId)) return;
+  create(tabId: string, cwd: string, cols: number, rows: number, command?: string): boolean {
+    if (this.ptys.has(tabId)) return false;
 
-    const shell = process.env.SHELL || '/bin/zsh';
-    const proc = pty.spawn(shell, ['-l'], {
+    const exe = command ?? process.env.SHELL ?? '/bin/zsh';
+    const args = command ? [] : ['-l'];
+    const proc = pty.spawn(exe, args, {
       name: 'xterm-256color',
       cols,
       rows,
@@ -34,6 +35,7 @@ export class ShellManager {
     });
 
     this.ptys.set(tabId, proc);
+    return true;
   }
 
   write(tabId: string, data: string): void {

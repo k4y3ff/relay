@@ -275,8 +275,8 @@ export function registerIpcHandlers(win: BrowserWindow, claudeManager: ClaudeMan
 
   ipcMain.handle(
     'shell:create',
-    (_event, { tabId, cwd, cols, rows }: { tabId: string; cwd: string; cols: number; rows: number }): void => {
-      shellManager.create(tabId, cwd, cols, rows);
+    (_event, { tabId, cwd, cols, rows, command }: { tabId: string; cwd: string; cols: number; rows: number; command?: string }): boolean => {
+      return shellManager.create(tabId, cwd, cols, rows, command);
     }
   );
 
