@@ -13,12 +13,14 @@
   --font-mono: "SF Mono", ui-monospace, "Cascadia Code", monospace;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html,
@@ -119,6 +121,14 @@ body,
   position: absolute;
   inset: 2px 0;
   background: var(--color-mac-border);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────── */
+
+.worktree-row-active {
+  border-left: 2px solid var(--color-mac-accent);
+  padding-left: calc(0.75rem - 2px);
+  background: rgba(10, 132, 255, 0.12);
 }
 
 /* ── Placeholder pane styles ───────────────────────────────── */
