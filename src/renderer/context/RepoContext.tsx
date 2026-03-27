@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useReducer, useCallback, ReactNode } from 'react';
-import type { Repo, Worktree } from '../types/repo';
+import type { Repo, Worktree, ChangedFile } from '../types/repo';
 
 // ── State ──────────────────────────────────────────────────────────────────
 
 interface RepoState {
   repos: Repo[];
   activeWorktreePath: string | null;
+  activeDiffFile: ChangedFile | null;
   collapsedRepos: Set<string>;
   loading: boolean;
 }
@@ -17,6 +18,7 @@ type Action =
   | { type: 'ADD_WORKTREE'; repoId: string; worktree: Worktree }
   | { type: 'REMOVE_WORKTREE'; repoId: string; worktreePath: string }
   | { type: 'SELECT_WORKTREE'; path: string | null }
+  | { type: 'SET_DIFF_FILE'; file: ChangedFile | null }
   | { type: 'TOGGLE_COLLAPSED'; repoId: string }
   | { type: 'SET_LOADING'; loading: boolean };
 
@@ -49,7 +51,9 @@ function reducer(state: RepoState, action: Action): RepoState {
           state.activeWorktreePath === action.worktreePath ? null : state.activeWorktreePath,
       };
     case 'SELECT_WORKTREE':
-      return { ...state, activeWorktreePath: action.path };
+      return { ...state, activeWorktreePath: action.path, activeDiffFile: null };
+    case 'SET_DIFF_FILE':
+      return { ...state, activeDiffFile: action.file };
     case 'TOGGLE_COLLAPSED': {
       const next = new Set(state.collapsedRepos);
       next.has(action.repoId) ? next.delete(action.repoId) : next.add(action.repoId);
@@ -65,6 +69,7 @@ function reducer(state: RepoState, action: Action): RepoState {
 const initialState: RepoState = {
   repos: [],
   activeWorktreePath: null,
+  activeDiffFile: null as ChangedFile | null,
   collapsedRepos: new Set(),
   loading: true,
 };
@@ -77,6 +82,7 @@ interface RepoContextValue extends RepoState {
   addWorktree: (repoId: string, branchName: string, createNew: boolean) => Promise<Worktree>;
   removeWorktree: (repoId: string, worktreePath: string) => Promise<void>;
   selectWorktree: (path: string) => void;
+  setActiveDiffFile: (file: ChangedFile | null) => void;
   toggleRepoCollapsed: (repoId: string) => void;
 }
 
@@ -129,6 +135,10 @@ export function RepoProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SELECT_WORKTREE', path });
   }, []);
 
+  const setActiveDiffFile = useCallback((file: ChangedFile | null) => {
+    dispatch({ type: 'SET_DIFF_FILE', file });
+  }, []);
+
   const toggleRepoCollapsed = useCallback((repoId: string) => {
     dispatch({ type: 'TOGGLE_COLLAPSED', repoId });
   }, []);
@@ -142,6 +152,7 @@ export function RepoProvider({ children }: { children: ReactNode }) {
         addWorktree,
         removeWorktree,
         selectWorktree,
+        setActiveDiffFile,
         toggleRepoCollapsed,
       }}
     >

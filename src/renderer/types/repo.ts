@@ -18,3 +18,10 @@ export interface PersistedRepo {
   id: string;
   rootPath: string;
 }
+
+export interface ChangedFile {
+  path: string;
+  status: 'M' | 'A' | 'D' | '?';
+  added: number;
+  deleted: number;
+}

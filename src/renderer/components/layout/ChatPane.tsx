@@ -1,8 +1,9 @@
 import { useRepo } from '../../context/RepoContext';
 import TerminalEmbed from '../chat/TerminalEmbed';
+import DiffViewer from '../chat/DiffViewer';
 
 export default function ChatPane() {
-  const { activeWorktreePath } = useRepo();
+  const { activeWorktreePath, activeDiffFile } = useRepo();
 
   if (!activeWorktreePath) {
     return (
@@ -14,7 +15,19 @@ export default function ChatPane() {
 
   return (
     <div className="chat-pane">
-      <TerminalEmbed worktreePath={activeWorktreePath} />
+      {/* Keep TerminalEmbed mounted at all times to preserve scrollback;
+          hide it when a diff file is active */}
+      <div style={{ display: activeDiffFile ? 'none' : 'flex', flex: 1, minHeight: 0 }}>
+        <TerminalEmbed worktreePath={activeWorktreePath} />
+      </div>
+      {activeDiffFile && (
+        <DiffViewer
+          worktreePath={activeWorktreePath}
+          filePath={activeDiffFile.path}
+          added={activeDiffFile.added}
+          deleted={activeDiffFile.deleted}
+        />
+      )}
     </div>
   );
 }
