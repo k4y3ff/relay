@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
 import { store } from './store.js';
-import type { Repo, Worktree, PersistedRepo } from '../renderer/types/repo.js';
+import type { Repo, Worktree, PersistedRepo, ChangedFile } from '../renderer/types/repo.js';
 import type { TerminalManager } from './terminal.js';
 
 const execFileAsync = promisify(execFile);
@@ -161,6 +161,76 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
   ipcMain.handle('shell:open-path', (_event, { path: p }: { path: string }): void => {
     shell.openPath(p);
   });
+
+  // git:changed-files — list modified/added/deleted/untracked files with line counts
+  ipcMain.handle(
+    'git:changed-files',
+    async (_event, { worktreePath }: { worktreePath: string }): Promise<ChangedFile[]> => {
+      // Get status + numstat for tracked changes
+      const [nameStatusResult, numStatResult, untrackedResult] = await Promise.all([
+        execFileAsync('git', ['diff', 'HEAD', '--name-status'], { cwd: worktreePath }).catch(() => ({ stdout: '' })),
+        execFileAsync('git', ['diff', 'HEAD', '--numstat'], { cwd: worktreePath }).catch(() => ({ stdout: '' })),
+        execFileAsync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: worktreePath }).catch(() => ({ stdout: '' })),
+      ]);
+
+      // Build a map of filename -> { added, deleted } from --numstat
+      const statMap = new Map<string, { added: number; deleted: number }>();
+      for (const line of numStatResult.stdout.trim().split('\n').filter(Boolean)) {
+        const parts = line.split('\t');
+        if (parts.length >= 3) {
+          statMap.set(parts[2], {
+            added: parseInt(parts[0], 10) || 0,
+            deleted: parseInt(parts[1], 10) || 0,
+          });
+        }
+      }
+
+      const files: ChangedFile[] = [];
+
+      // Parse --name-status lines (M/A/D + filename)
+      for (const line of nameStatusResult.stdout.trim().split('\n').filter(Boolean)) {
+        const tab = line.indexOf('\t');
+        if (tab === -1) continue;
+        const rawStatus = line.slice(0, tab).trim();
+        const filePath = line.slice(tab + 1).trim();
+        const status = (rawStatus[0] as 'M' | 'A' | 'D') ?? 'M';
+        const stat = statMap.get(filePath) ?? { added: 0, deleted: 0 };
+        files.push({ path: filePath, status, ...stat });
+      }
+
+      // Add untracked files
+      for (const filePath of untrackedResult.stdout.trim().split('\n').filter(Boolean)) {
+        files.push({ path: filePath, status: '?', added: 0, deleted: 0 });
+      }
+
+      return files;
+    }
+  );
+
+  // git:diff-file — return unified diff string for a single file
+  ipcMain.handle(
+    'git:diff-file',
+    async (
+      _event,
+      { worktreePath, filePath, untracked }: { worktreePath: string; filePath: string; untracked: boolean }
+    ): Promise<string> => {
+      if (untracked) {
+        const fullPath = path.join(worktreePath, filePath);
+        const { stdout } = await execFileAsync(
+          'git',
+          ['diff', '--no-index', '/dev/null', fullPath],
+          { cwd: worktreePath }
+        ).catch((e: { stdout: string }) => ({ stdout: e.stdout ?? '' }));
+        console.log(`[git:diff-file] untracked ${filePath}: ${stdout.length} bytes`);
+        return stdout;
+      }
+      const { stdout } = await execFileAsync('git', ['diff', 'HEAD', '--', filePath], {
+        cwd: worktreePath,
+      });
+      console.log(`[git:diff-file] tracked ${filePath}: ${stdout.length} bytes`);
+      return stdout;
+    }
+  );
 
   // ── Terminal channels ──────────────────────────────────────────────────────
 
