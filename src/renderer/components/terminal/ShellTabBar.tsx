@@ -79,7 +79,17 @@ export default function ShellTabBar({ tabs, activeTabId, onSelect, onAdd, onRena
               autoFocus
             />
           ) : (
-            <span className="shell-tab-label">{tab.label}</span>
+            <>
+              <span className="shell-tab-label">{tab.label}</span>
+              <button
+                className="shell-tab-close"
+                onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
+                disabled={tabs.length <= 1}
+                title="Close tab"
+              >
+                ×
+              </button>
+            </>
           )}
         </button>
       ))}

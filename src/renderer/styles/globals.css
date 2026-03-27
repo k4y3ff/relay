@@ -526,6 +526,37 @@ body,
   white-space: nowrap;
 }
 
+.shell-tab-close {
+  display: none;
+  flex-shrink: 0;
+  align-self: center;
+  margin-left: 4px;
+  padding: 0 2px;
+  background: none;
+  border: none;
+  color: var(--color-mac-muted);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 3px;
+  -webkit-app-region: no-drag;
+}
+
+.shell-tab:hover .shell-tab-close {
+  display: flex;
+  align-items: center;
+}
+
+.shell-tab-close:hover:not(:disabled) {
+  color: var(--color-mac-text);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.shell-tab-close:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
 .shell-tab-rename {
   background: var(--color-mac-surface2);
   border: 1px solid var(--color-mac-accent);
