@@ -1,5 +1,6 @@
 import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { useRepo } from '../../context/RepoContext';
+import { useChatSession } from '../../context/ChatContext';
 import type { ChangedFile } from '../../types/repo';
 
 interface Props {
@@ -22,13 +23,16 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function ChangedFilesPane({ style }: Props) {
   const { activeWorktreePath, activeDiffFile, setActiveDiffFile } = useRepo();
+  const { appendFileEditBanner } = useChatSession();
   const [files, setFiles] = useState<ChangedFile[]>([]);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const prevFilesRef = useRef<ChangedFile[]>([]);
 
   const fetchFiles = useCallback(async () => {
     if (!activeWorktreePath) {
       setFiles([]);
+      prevFilesRef.current = [];
       return;
     }
     setLoading(true);
@@ -36,13 +40,25 @@ export default function ChangedFilesPane({ style }: Props) {
       const result = (await window.relay.invoke('git:changed-files', {
         worktreePath: activeWorktreePath,
       })) as ChangedFile[];
+
+      // Emit a file-edit banner if the set of changed files has grown
+      const prev = prevFilesRef.current;
+      if (prev.length > 0 && result.length > prev.length) {
+        const prevPaths = new Set(prev.map((f) => f.path));
+        const newPaths = result.map((f) => f.path).filter((p) => !prevPaths.has(p));
+        if (newPaths.length > 0) {
+          appendFileEditBanner(activeWorktreePath, newPaths);
+        }
+      }
+      prevFilesRef.current = result;
+
       setFiles(result);
     } catch {
       setFiles([]);
     } finally {
       setLoading(false);
     }
-  }, [activeWorktreePath]);
+  }, [activeWorktreePath, appendFileEditBanner]);
 
   // Fetch on mount and when active worktree changes
   useEffect(() => {
