@@ -138,68 +138,81 @@ body,
 }
 
 /* ── diff2html dark theme overrides ─────────────────────────── */
-/* Override diff2html CSS custom properties scoped to .diff-content,
-   then patch the few backgrounds not driven by those variables.  */
+/* Strategy: set dark bg on all td first (specificity 0,1,1),
+   then override per-row with higher-specificity rules (0,2,1).  */
 
 .diff-content {
   font-family: var(--font-mono);
   font-size: 12px;
-
-  /* Row background variables */
-  --d2h-del-bg-color:            rgba(239, 68, 68, 0.13);
-  --d2h-del-border-color:        rgba(239, 68, 68, 0.35);
-  --d2h-del-highlight-bg-color:  rgba(239, 68, 68, 0.40);
-  --d2h-del-label-color:         #f87171;
-  --d2h-ins-bg-color:            rgba(74, 222, 128, 0.10);
-  --d2h-ins-border-color:        rgba(74, 222, 128, 0.30);
-  --d2h-ins-highlight-bg-color:  rgba(74, 222, 128, 0.32);
-  --d2h-ins-label-color:         #4ade80;
-  --d2h-change-del-color:        rgba(234, 179, 8, 0.18);
-  --d2h-change-ins-color:        rgba(74, 222, 128, 0.14);
-  --d2h-info-bg-color:           rgba(10, 132, 255, 0.08);
-  --d2h-info-border-color:       rgba(10, 132, 255, 0.25);
-  --d2h-dim-color:               var(--color-mac-muted);
-  --d2h-dark-del-label-color:    #f87171;
+  background: var(--color-mac-bg);
 }
 
-/* All cells: dark background + light text */
-.diff-content td,
-.diff-content .d2h-code-wrapper,
 .diff-content .d2h-file-wrapper {
-  background-color: var(--color-mac-bg);
-  color: var(--color-mac-text);
-  border-color: var(--color-mac-border);
+  background: var(--color-mac-bg);
+  border: 1px solid var(--color-mac-border);
+  margin-bottom: 8px;
 }
 
-/* File header bar */
 .diff-content .d2h-file-header {
-  background-color: var(--color-mac-surface2);
+  background: var(--color-mac-surface2) !important;
   border-bottom: 1px solid var(--color-mac-border);
   color: var(--color-mac-text);
 }
 
-/* Line number cells */
+/* Base: all cells dark */
+.diff-content td {
+  background-color: var(--color-mac-bg) !important;
+  color: var(--color-mac-text);
+  border-color: var(--color-mac-border);
+}
+
+/* Line numbers */
 .diff-content .d2h-code-linenumber {
-  background-color: var(--color-mac-surface);
+  background-color: var(--color-mac-surface) !important;
   color: var(--color-mac-muted);
   border-right: 1px solid var(--color-mac-border);
 }
 
-/* Ensure row colours (driven by CSS vars above) apply to td backgrounds */
-.diff-content .d2h-del td  { background-color: var(--d2h-del-bg-color); color: #fca5a5; }
-.diff-content .d2h-ins td  { background-color: var(--d2h-ins-bg-color); color: #bbf7d0; }
-.diff-content .d2h-info td { background-color: var(--d2h-info-bg-color); }
+/* Deletion rows — override td bg and line number bg */
+.diff-content .d2h-del td {
+  background-color: rgba(239, 68, 68, 0.13) !important;
+  color: #fca5a5;
+}
+.diff-content .d2h-del .d2h-code-linenumber {
+  background-color: rgba(239, 68, 68, 0.22) !important;
+  color: #f87171;
+}
 
-/* Line number cells for coloured rows */
-.diff-content .d2h-del  .d2h-code-linenumber { background-color: rgba(239, 68, 68, 0.20); color: #f87171; }
-.diff-content .d2h-ins  .d2h-code-linenumber { background-color: rgba(74, 222, 128, 0.16); color: #4ade80; }
-.diff-content .d2h-info .d2h-code-linenumber { background-color: rgba(10, 132, 255, 0.12); }
+/* Insertion rows */
+.diff-content .d2h-ins td {
+  background-color: rgba(74, 222, 128, 0.10) !important;
+  color: #bbf7d0;
+}
+.diff-content .d2h-ins .d2h-code-linenumber {
+  background-color: rgba(74, 222, 128, 0.17) !important;
+  color: #4ade80;
+}
 
-/* Inline character highlights (del/ins tags) — text-decoration already none */
+/* Hunk header rows */
+.diff-content .d2h-info td {
+  background-color: rgba(10, 132, 255, 0.08) !important;
+  color: var(--color-mac-muted);
+}
+.diff-content .d2h-info .d2h-code-linenumber {
+  background-color: rgba(10, 132, 255, 0.13) !important;
+}
+
+/* Inline character highlights */
 .diff-content .d2h-code-line del,
-.diff-content .d2h-code-side-line del { background-color: var(--d2h-del-highlight-bg-color); text-decoration: none; }
+.diff-content .d2h-code-side-line del {
+  background-color: rgba(239, 68, 68, 0.40);
+  text-decoration: none;
+}
 .diff-content .d2h-code-line ins,
-.diff-content .d2h-code-side-line ins { background-color: var(--d2h-ins-highlight-bg-color); text-decoration: none; }
+.diff-content .d2h-code-side-line ins {
+  background-color: rgba(74, 222, 128, 0.32);
+  text-decoration: none;
+}
 
 /* Tag badges */
 .diff-content .d2h-tag {
