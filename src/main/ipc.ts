@@ -4,6 +4,8 @@ import { promisify } from 'node:util';
 import path from 'node:path';
 import { store } from './store.js';
 import type { Repo, Worktree, PersistedRepo } from '../renderer/types/repo.js';
+import type { PersistedChatSession } from '../renderer/types/chat.js';
+import type { ClaudeManager } from './claude.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -63,7 +65,7 @@ async function assembleRepo(persisted: PersistedRepo): Promise<Repo> {
 
 // ── IPC handlers ───────────────────────────────────────────────────────────
 
-export function registerIpcHandlers(win: BrowserWindow): void {
+export function registerIpcHandlers(win: BrowserWindow, claude: ClaudeManager): void {
   // repos:list — hydrate all repos from store
   ipcMain.handle('repos:list', async (): Promise<Repo[]> => {
     const persisted = store.get('repos');
@@ -126,9 +128,6 @@ export function registerIpcHandlers(win: BrowserWindow): void {
 
       await execFileAsync('git', args, { cwd: repo.rootPath });
 
-      // TODO Section 4: spawn Claude Code subprocess for this worktree
-      // TODO Section 6: pre-spawn PTY terminal for this worktree
-
       // Find the newly added worktree in the list
       const worktrees = await getWorktrees(repo.rootPath);
       const newWt = worktrees.find((wt) => wt.path === worktreePath);
@@ -167,4 +166,86 @@ export function registerIpcHandlers(win: BrowserWindow): void {
   ipcMain.handle('shell:open-path', (_event, { path: p }: { path: string }): void => {
     shell.openPath(p);
   });
+
+  // ── Claude Code channels ──────────────────────────────────────────────────
+
+  ipcMain.handle(
+    'claude:send-message',
+    (_event, { worktreePath, text }: { worktreePath: string; text: string }): void => {
+      claude.sendMessage(worktreePath, text);
+    }
+  );
+
+  ipcMain.handle(
+    'claude:new-chat',
+    (_event, { worktreePath }: { worktreePath: string }): void => {
+      claude.newChat(worktreePath);
+    }
+  );
+
+  ipcMain.handle(
+    'claude:stop',
+    (_event, { worktreePath }: { worktreePath: string }): void => {
+      claude.stop(worktreePath);
+    }
+  );
+
+  ipcMain.handle(
+    'claude:get-diff',
+    async (
+      _event,
+      { worktreePath, filePath }: { worktreePath: string; filePath: string }
+    ): Promise<string> => {
+      try {
+        const { stdout } = await execFileAsync(
+          'git',
+          ['diff', 'HEAD', '--', filePath],
+          { cwd: worktreePath }
+        );
+        // If no staged/unstaged diff, try showing untracked file content
+        if (!stdout) {
+          const { stdout: catOut } = await execFileAsync(
+            'git',
+            ['diff', '--cached', '--', filePath],
+            { cwd: worktreePath }
+          );
+          return catOut;
+        }
+        return stdout;
+      } catch {
+        return '';
+      }
+    }
+  );
+
+  ipcMain.handle(
+    'claude:validate',
+    async (): Promise<{ ok: boolean; version?: string }> => {
+      try {
+        const { stdout } = await execFileAsync('claude', ['--version']);
+        return { ok: true, version: stdout.trim() };
+      } catch {
+        return { ok: false };
+      }
+    }
+  );
+
+  // ── Chat session persistence ──────────────────────────────────────────────
+
+  ipcMain.handle(
+    'chat:sessions:load',
+    (_event, { worktreePath }: { worktreePath: string }): PersistedChatSession | null => {
+      const sessions = store.get('chatSessions');
+      return sessions.find((s) => s.worktreePath === worktreePath) ?? null;
+    }
+  );
+
+  ipcMain.handle(
+    'chat:sessions:save',
+    (_event, { session }: { session: PersistedChatSession }): void => {
+      const sessions = store.get('chatSessions');
+      const filtered = sessions.filter((s) => s.worktreePath !== session.worktreePath);
+      store.set('chatSessions', [...filtered, session]);
+    }
+  );
 }

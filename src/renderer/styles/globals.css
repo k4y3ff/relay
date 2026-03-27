@@ -131,6 +131,52 @@ body,
   background: rgba(10, 132, 255, 0.12);
 }
 
+/* ── Spinner animation ─────────────────────────────────────── */
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── diff2html overrides ────────────────────────────────────── */
+
+.diff2html-wrapper .d2h-wrapper {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.diff2html-wrapper .d2h-file-header {
+  background: var(--color-mac-surface2);
+  border-color: var(--color-mac-border);
+  color: var(--color-mac-text);
+  padding: 6px 12px;
+}
+
+.diff2html-wrapper .d2h-code-wrapper {
+  border-color: var(--color-mac-border);
+}
+
+.diff2html-wrapper .d2h-diff-table {
+  font-family: var(--font-mono);
+}
+
+.diff2html-wrapper .d2h-del {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.diff2html-wrapper .d2h-ins {
+  background: rgba(74, 222, 128, 0.12);
+}
+
+.diff2html-wrapper .d2h-code-linenumber {
+  color: var(--color-mac-muted);
+  background: var(--color-mac-bg);
+  border-color: var(--color-mac-border);
+}
+
+.diff2html-wrapper .d2h-code-line {
+  color: var(--color-mac-text);
+}
+
 /* ── Placeholder pane styles ───────────────────────────────── */
 
 .pane-placeholder {
