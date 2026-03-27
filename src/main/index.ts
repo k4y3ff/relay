@@ -1,16 +1,16 @@
 import { app, BrowserWindow } from 'electron';
 import { createMainWindow } from './window';
 import { registerIpcHandlers } from './ipc';
-import { ClaudeManager } from './claude';
+import { TerminalManager } from './terminal';
 
 let mainWindow: BrowserWindow | null = null;
 
 app.whenReady().then(() => {
   mainWindow = createMainWindow();
-  const claudeManager = new ClaudeManager(mainWindow);
-  registerIpcHandlers(mainWindow, claudeManager);
+  const terminalManager = new TerminalManager(mainWindow);
+  registerIpcHandlers(mainWindow, terminalManager);
 
-  app.on('before-quit', () => claudeManager.killAll());
+  app.on('before-quit', () => terminalManager.killAll());
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
