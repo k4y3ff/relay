@@ -11,7 +11,7 @@ interface WorktreeRowProps {
 export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
   const { activeWorktreePath, selectWorktree, removeWorktree } = useRepo();
   const isActive = activeWorktreePath === worktree.path;
-  const [stats, setStats] = useState<{ added: number; deleted: number } | null>(null);
+  const [stats, setStats] = useState<{ added: number; deleted: number; fileCount: number } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -20,10 +20,13 @@ export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
         const files = (await window.relay.invoke('git:changed-files', {
           worktreePath: worktree.path,
         })) as ChangedFile[];
+        console.log(`[WorktreeRow] ${worktree.branch}: ${files.length} files`, files);
+        if (files.length === 0) { setStats(null); return; }
         const added = files.reduce((s, f) => s + f.added, 0);
         const deleted = files.reduce((s, f) => s + f.deleted, 0);
-        setStats(added + deleted > 0 ? { added, deleted } : null);
-      } catch {
+        setStats({ added, deleted, fileCount: files.length });
+      } catch (e) {
+        console.error(`[WorktreeRow] ${worktree.branch} error:`, e);
         setStats(null);
       }
     };
@@ -62,11 +65,10 @@ export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
       <span className="truncate flex-1 ml-4">{worktree.branch}</span>
       {stats && (
         <span className="flex gap-1 text-[11px] font-mono mr-1 shrink-0">
-          {stats.added > 0 && (
-            <span style={{ color: '#4ade80' }}>+{stats.added}</span>
-          )}
-          {stats.deleted > 0 && (
-            <span style={{ color: '#f87171' }}>-{stats.deleted}</span>
+          {stats.added > 0 && <span style={{ color: '#4ade80' }}>+{stats.added}</span>}
+          {stats.deleted > 0 && <span style={{ color: '#f87171' }}>-{stats.deleted}</span>}
+          {stats.added === 0 && stats.deleted === 0 && (
+            <span style={{ color: 'var(--color-mac-muted)' }}>{stats.fileCount}~</span>
           )}
         </span>
       )}
