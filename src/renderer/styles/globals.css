@@ -138,8 +138,9 @@ body,
 }
 
 /* ── diff2html dark theme overrides ─────────────────────────── */
-/* Strategy: set dark bg on all td first (specificity 0,1,1),
-   then override per-row with higher-specificity rules (0,2,1).  */
+/* NOTE: d2h-del / d2h-ins / d2h-info are classes on the <td>
+   elements themselves, not on <tr>. Selectors must be td.d2h-del,
+   not .d2h-del td.                                               */
 
 .diff-content {
   font-family: var(--font-mono);
@@ -166,39 +167,40 @@ body,
   border-color: var(--color-mac-border);
 }
 
-/* Line numbers */
-.diff-content .d2h-code-linenumber {
+/* Line number cells */
+.diff-content td.d2h-code-linenumber {
   background-color: var(--color-mac-surface) !important;
   color: var(--color-mac-muted);
   border-right: 1px solid var(--color-mac-border);
 }
 
-/* Deletion rows — override td bg and line number bg */
-.diff-content .d2h-del td {
+/* Deletion cells */
+.diff-content td.d2h-del {
   background-color: rgba(239, 68, 68, 0.13) !important;
   color: #fca5a5;
 }
-.diff-content .d2h-del .d2h-code-linenumber {
+.diff-content td.d2h-code-linenumber.d2h-del {
   background-color: rgba(239, 68, 68, 0.22) !important;
   color: #f87171;
 }
 
-/* Insertion rows */
-.diff-content .d2h-ins td {
+/* Insertion cells */
+.diff-content td.d2h-ins {
   background-color: rgba(74, 222, 128, 0.10) !important;
   color: #bbf7d0;
 }
-.diff-content .d2h-ins .d2h-code-linenumber {
+.diff-content td.d2h-code-linenumber.d2h-ins {
   background-color: rgba(74, 222, 128, 0.17) !important;
   color: #4ade80;
 }
 
-/* Hunk header rows */
-.diff-content .d2h-info td {
+/* Hunk header cells */
+.diff-content td.d2h-info {
   background-color: rgba(10, 132, 255, 0.08) !important;
   color: var(--color-mac-muted);
+  font-style: italic;
 }
-.diff-content .d2h-info .d2h-code-linenumber {
+.diff-content td.d2h-code-linenumber.d2h-info {
   background-color: rgba(10, 132, 255, 0.13) !important;
 }
 
