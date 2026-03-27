@@ -5,6 +5,7 @@ import path from 'node:path';
 import { store } from './store.js';
 import type { Repo, Worktree, PersistedRepo, ChangedFile } from '../renderer/types/repo.js';
 import type { TerminalManager } from './terminal.js';
+import type { ShellManager } from './shell.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -64,7 +65,7 @@ async function assembleRepo(persisted: PersistedRepo): Promise<Repo> {
 
 // ── IPC handlers ───────────────────────────────────────────────────────────
 
-export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManager): void {
+export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManager, shellManager: ShellManager): void {
   // repos:list — hydrate all repos from store
   ipcMain.handle('repos:list', async (): Promise<Repo[]> => {
     const persisted = store.get('repos');
@@ -252,6 +253,36 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     'terminal:resize',
     (_event, { worktreePath, cols, rows }: { worktreePath: string; cols: number; rows: number }): void => {
       terminal.resize(worktreePath, cols, rows);
+    }
+  );
+
+  // ── Shell channels (per-tab PTY sessions for the terminal pane) ────────────
+
+  ipcMain.handle(
+    'shell:create',
+    (_event, { tabId, cwd, cols, rows }: { tabId: string; cwd: string; cols: number; rows: number }): void => {
+      shellManager.create(tabId, cwd, cols, rows);
+    }
+  );
+
+  ipcMain.handle(
+    'shell:write',
+    (_event, { tabId, data }: { tabId: string; data: string }): void => {
+      shellManager.write(tabId, data);
+    }
+  );
+
+  ipcMain.handle(
+    'shell:resize',
+    (_event, { tabId, cols, rows }: { tabId: string; cols: number; rows: number }): void => {
+      shellManager.resize(tabId, cols, rows);
+    }
+  );
+
+  ipcMain.handle(
+    'shell:close',
+    (_event, { tabId }: { tabId: string }): void => {
+      shellManager.close(tabId);
     }
   );
 }
