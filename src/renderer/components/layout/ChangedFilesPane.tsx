@@ -24,7 +24,9 @@ const STATUS_LABELS: Record<string, string> = {
 export default function ChangedFilesPane({ style }: Props) {
   const { activeWorktreePath, activeDiffFile, setActiveDiffFile } = useRepo();
   const { appendFileEditBanner } = useChatSession();
+  const [activeTab, setActiveTab] = useState<'changes' | 'all-files'>('changes');
   const [files, setFiles] = useState<ChangedFile[]>([]);
+  const [allFiles, setAllFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const prevFilesRef = useRef<ChangedFile[]>([]);
@@ -60,12 +62,28 @@ export default function ChangedFilesPane({ style }: Props) {
     }
   }, [activeWorktreePath, appendFileEditBanner]);
 
+  const fetchAllFiles = useCallback(async () => {
+    if (!activeWorktreePath) {
+      setAllFiles([]);
+      return;
+    }
+    try {
+      const result = (await window.relay.invoke('git:all-files', {
+        worktreePath: activeWorktreePath,
+      })) as string[];
+      setAllFiles(result);
+    } catch {
+      setAllFiles([]);
+    }
+  }, [activeWorktreePath]);
+
   // Fetch on mount and when active worktree changes
   useEffect(() => {
     fetchFiles();
-  }, [fetchFiles]);
+    fetchAllFiles();
+  }, [fetchFiles, fetchAllFiles]);
 
-  // Auto-refresh every 3 seconds when window is focused
+  // Auto-refresh changed files every 3 seconds when window is focused
   useEffect(() => {
     intervalRef.current = setInterval(() => {
       if (document.hasFocus()) {
@@ -77,15 +95,32 @@ export default function ChangedFilesPane({ style }: Props) {
     };
   }, [fetchFiles]);
 
+  // Build a map for quick lookup of changed file status
+  const changedFileMap = new Map(files.map((f) => [f.path, f]));
+
   return (
     <div style={style} className="changed-files-pane">
-      <div className="changed-files-header">
-        <span className="changed-files-title">
-          Changes{files.length > 0 ? ` ${files.length}` : ''}
-        </span>
+      <div className="shell-tab-bar">
+        <button
+          className={`shell-tab${activeTab === 'all-files' ? ' shell-tab-active' : ''}`}
+          onClick={() => setActiveTab('all-files')}
+        >
+          <span className="shell-tab-label">
+            All Files{allFiles.length > 0 ? ` ${allFiles.length}` : ''}
+          </span>
+        </button>
+        <button
+          className={`shell-tab${activeTab === 'changes' ? ' shell-tab-active' : ''}`}
+          onClick={() => setActiveTab('changes')}
+        >
+          <span className="shell-tab-label">
+            Changes{files.length > 0 ? ` ${files.length}` : ''}
+          </span>
+        </button>
         <button
           className="changed-files-refresh"
-          onClick={fetchFiles}
+          style={{ marginLeft: 'auto' }}
+          onClick={() => { fetchFiles(); fetchAllFiles(); }}
           disabled={loading || !activeWorktreePath}
           title="Refresh"
         >
@@ -96,33 +131,76 @@ export default function ChangedFilesPane({ style }: Props) {
       <div className="changed-files-list">
         {!activeWorktreePath ? (
           <div className="changed-files-empty">Select a worktree to see changes</div>
-        ) : files.length === 0 && !loading ? (
-          <div className="changed-files-empty">No changes since last commit</div>
-        ) : (
-          files.map((file) => (
-            <button
-              key={file.path}
-              className={`changed-files-row${activeDiffFile?.path === file.path ? ' changed-files-row-active' : ''}`}
-              onClick={() => setActiveDiffFile(file)}
-              title={file.path}
-            >
-              <span
-                className="changed-files-status"
-                style={{ color: STATUS_COLORS[file.status] }}
+        ) : activeTab === 'changes' ? (
+          files.length === 0 && !loading ? (
+            <div className="changed-files-empty">No changes since last commit</div>
+          ) : (
+            files.map((file) => (
+              <button
+                key={file.path}
+                className={`changed-files-row${activeDiffFile?.path === file.path ? ' changed-files-row-active' : ''}`}
+                onClick={() => setActiveDiffFile(file)}
+                title={file.path}
               >
-                {STATUS_LABELS[file.status]}
-              </span>
-              <span className="changed-files-path">{file.path}</span>
-              <span className="changed-files-stats">
-                {file.added > 0 && (
-                  <span className="changed-files-added">+{file.added}</span>
-                )}
-                {file.deleted > 0 && (
-                  <span className="changed-files-deleted">-{file.deleted}</span>
-                )}
-              </span>
-            </button>
-          ))
+                <span
+                  className="changed-files-status"
+                  style={{ color: STATUS_COLORS[file.status] }}
+                >
+                  {STATUS_LABELS[file.status]}
+                </span>
+                <span className="changed-files-path">{file.path}</span>
+                <span className="changed-files-stats">
+                  {file.added > 0 && (
+                    <span className="changed-files-added">+{file.added}</span>
+                  )}
+                  {file.deleted > 0 && (
+                    <span className="changed-files-deleted">-{file.deleted}</span>
+                  )}
+                </span>
+              </button>
+            ))
+          )
+        ) : (
+          allFiles.length === 0 ? (
+            <div className="changed-files-empty">No files found</div>
+          ) : (
+            allFiles.map((filePath) => {
+              const changed = changedFileMap.get(filePath);
+              const isActive = activeDiffFile?.path === filePath;
+              return (
+                <button
+                  key={filePath}
+                  className={`changed-files-row${isActive ? ' changed-files-row-active' : ''}`}
+                  onClick={() =>
+                    setActiveDiffFile(
+                      changed ?? { path: filePath, status: 'M', added: 0, deleted: 0 }
+                    )
+                  }
+                  title={filePath}
+                >
+                  {changed ? (
+                    <span
+                      className="changed-files-status"
+                      style={{ color: STATUS_COLORS[changed.status] }}
+                    >
+                      {STATUS_LABELS[changed.status]}
+                    </span>
+                  ) : (
+                    <span className="changed-files-status" />
+                  )}
+                  <span className="changed-files-path">{filePath}</span>
+                  <span className="changed-files-stats">
+                    {changed && changed.added > 0 && (
+                      <span className="changed-files-added">+{changed.added}</span>
+                    )}
+                    {changed && changed.deleted > 0 && (
+                      <span className="changed-files-deleted">-{changed.deleted}</span>
+                    )}
+                  </span>
+                </button>
+              );
+            })
+          )
         )}
       </div>
     </div>

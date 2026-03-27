@@ -2,6 +2,7 @@ import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
+import fs from 'node:fs';
 import { store } from './store.js';
 import type { Repo, Worktree, PersistedRepo, ChangedFile } from '../renderer/types/repo.js';
 import type { ClaudeManager } from './claude.js';
@@ -205,6 +206,37 @@ export function registerIpcHandlers(win: BrowserWindow, claudeManager: ClaudeMan
       }
 
       return files;
+    }
+  );
+
+  // git:all-files — recursively list all files in the worktree directory
+  ipcMain.handle(
+    'git:all-files',
+    (_event, { worktreePath }: { worktreePath: string }): string[] => {
+      const SKIP_DIRS = new Set(['.git', 'node_modules', '.next', 'dist', 'build']);
+      const results: string[] = [];
+
+      function walk(dir: string, rel: string) {
+        let entries: fs.Dirent[];
+        try {
+          entries = fs.readdirSync(dir, { withFileTypes: true });
+        } catch {
+          return;
+        }
+        for (const entry of entries) {
+          if (entry.isDirectory()) {
+            if (!SKIP_DIRS.has(entry.name)) {
+              walk(path.join(dir, entry.name), rel ? `${rel}/${entry.name}` : entry.name);
+            }
+          } else if (entry.isFile()) {
+            results.push(rel ? `${rel}/${entry.name}` : entry.name);
+          }
+        }
+      }
+
+      walk(worktreePath, '');
+      results.sort();
+      return results;
     }
   );
 
