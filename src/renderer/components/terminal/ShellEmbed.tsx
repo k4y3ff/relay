@@ -73,6 +73,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active, co
       term.dispose();
       termRef.current = null;
       fitAddonRef.current = null;
+      window.relay.invoke('shell:close', { tabId });
     };
   }, [tabId]); // cwd is stable per tab instance; eslint-disable-line react-hooks/exhaustive-deps
 

@@ -12,9 +12,11 @@ export default function ChatPane() {
   const shellRefsMap = useRef(new Map<string, ShellEmbedHandle>());
 
   // Ensure a tabId exists for every worktree we encounter
-  if (activeWorktreePath && !worktreeTabsRef.current.has(activeWorktreePath)) {
-    worktreeTabsRef.current.set(activeWorktreePath, crypto.randomUUID());
-  }
+  useEffect(() => {
+    if (activeWorktreePath && !worktreeTabsRef.current.has(activeWorktreePath)) {
+      worktreeTabsRef.current.set(activeWorktreePath, crypto.randomUUID());
+    }
+  }, [activeWorktreePath]);
 
   // Refit the active claude terminal when the diff viewer closes
   useEffect(() => {
@@ -35,27 +37,23 @@ export default function ChatPane() {
   return (
     <div className="chat-pane">
       {/* Render all known worktree terminals; hide inactive ones to preserve PTY state */}
-      {Array.from(worktreeTabsRef.current.entries()).map(([wtp, tabId]) => (
-        <div
-          key={tabId}
-          style={{
-            display: wtp === activeWorktreePath && !activeDiffFile ? 'flex' : 'none',
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
-          <ShellEmbed
-            ref={(handle) => {
-              if (handle) shellRefsMap.current.set(tabId, handle);
-              else shellRefsMap.current.delete(tabId);
-            }}
-            tabId={tabId}
-            cwd={wtp}
-            active={wtp === activeWorktreePath && !activeDiffFile}
-            command="claude"
-          />
-        </div>
-      ))}
+      {Array.from(worktreeTabsRef.current.entries()).map(([wtp, tabId]) => {
+        const isActive = wtp === activeWorktreePath && !activeDiffFile;
+        return (
+          <div key={tabId} style={{ display: isActive ? 'flex' : 'none', flex: 1, minHeight: 0 }}>
+            <ShellEmbed
+              ref={(handle) => {
+                if (handle) shellRefsMap.current.set(tabId, handle);
+                else shellRefsMap.current.delete(tabId);
+              }}
+              tabId={tabId}
+              cwd={wtp}
+              active={isActive}
+              command="claude"
+            />
+          </div>
+        );
+      })}
       {activeDiffFile && (
         <DiffViewer
           worktreePath={activeWorktreePath}
