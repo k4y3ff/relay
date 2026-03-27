@@ -6,11 +6,12 @@ import { useRepo } from '../../context/RepoContext';
 interface Props {
   worktreePath: string;
   filePath: string;
+  status: string;
   added: number;
   deleted: number;
 }
 
-export default function DiffViewer({ worktreePath, filePath, added, deleted }: Props) {
+export default function DiffViewer({ worktreePath, filePath, status, added, deleted }: Props) {
   const { setActiveDiffFile } = useRepo();
   const [diffHtml, setDiffHtml] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -20,20 +21,24 @@ export default function DiffViewer({ worktreePath, filePath, added, deleted }: P
     setLoading(true);
     setError(null);
     window.relay
-      .invoke('git:diff-file', { worktreePath, filePath, untracked: false })
+      .invoke('git:diff-file', { worktreePath, filePath, untracked: status === '?' })
       .then((rawDiff) => {
         const diffStr = rawDiff as string;
         if (!diffStr.trim()) {
-          setDiffHtml('<p class="diff-empty">No diff available.</p>');
-        } else {
+          setError(`No diff output from git for: ${filePath}`);
+          return;
+        }
+        try {
           setDiffHtml(html(diffStr, { drawFileList: false, outputFormat: 'line-by-line' }));
+        } catch (e) {
+          setError(`Failed to render diff: ${e instanceof Error ? e.message : String(e)}`);
         }
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Failed to load diff');
+        setError(err instanceof Error ? err.message : String(err));
       })
       .finally(() => setLoading(false));
-  }, [worktreePath, filePath]);
+  }, [worktreePath, filePath, status]);
 
   return (
     <div className="diff-viewer">

@@ -215,16 +215,19 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
       { worktreePath, filePath, untracked }: { worktreePath: string; filePath: string; untracked: boolean }
     ): Promise<string> => {
       if (untracked) {
+        const fullPath = path.join(worktreePath, filePath);
         const { stdout } = await execFileAsync(
           'git',
-          ['diff', '--no-index', '/dev/null', filePath],
+          ['diff', '--no-index', '/dev/null', fullPath],
           { cwd: worktreePath }
-        ).catch((e: { stdout: string }) => ({ stdout: e.stdout })); // git diff --no-index exits 1 when there are diffs
+        ).catch((e: { stdout: string }) => ({ stdout: e.stdout ?? '' }));
+        console.log(`[git:diff-file] untracked ${filePath}: ${stdout.length} bytes`);
         return stdout;
       }
       const { stdout } = await execFileAsync('git', ['diff', 'HEAD', '--', filePath], {
         cwd: worktreePath,
       });
+      console.log(`[git:diff-file] tracked ${filePath}: ${stdout.length} bytes`);
       return stdout;
     }
   );

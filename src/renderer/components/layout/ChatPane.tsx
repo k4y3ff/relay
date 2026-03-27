@@ -32,6 +32,7 @@ export default function ChatPane() {
         <DiffViewer
           worktreePath={activeWorktreePath}
           filePath={activeDiffFile.path}
+          status={activeDiffFile.status}
           added={activeDiffFile.added}
           deleted={activeDiffFile.deleted}
         />
