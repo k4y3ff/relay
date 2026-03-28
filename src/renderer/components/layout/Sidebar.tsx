@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useRepo } from '../../context/RepoContext';
 import TaskGroupSection from '../sidebar/TaskGroupSection';
 
-export default function Sidebar() {
+export default function Sidebar({ style }: { style?: React.CSSProperties }) {
   const { taskGroups, loading, createTaskGroup } = useRepo();
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState('');
@@ -29,7 +29,7 @@ export default function Sidebar() {
   }
 
   return (
-    <div className="sidebar flex flex-col h-full">
+    <div className="sidebar flex flex-col h-full" style={style}>
       {/* Task group list */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {loading && (
