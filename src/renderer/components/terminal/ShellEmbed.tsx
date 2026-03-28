@@ -52,7 +52,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
       const { tabId: id, data } = payload as { tabId: string; data: string };
       if (id === tabId) term.write(data);
     };
-    window.relay.on('shell:data', onData);
+    const offData = window.relay.on('shell:data', onData);
 
     const onInput = term.onData((data) => {
       window.relay.invoke('shell:write', { tabId, data });
@@ -67,7 +67,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
     observer.observe(container);
 
     return () => {
-      window.relay.off('shell:data', onData);
+      offData();
       onInput.dispose();
       observer.disconnect();
       term.dispose();

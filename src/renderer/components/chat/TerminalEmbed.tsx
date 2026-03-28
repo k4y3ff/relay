@@ -30,7 +30,7 @@ export default function TerminalEmbed({ worktreePath }: Props) {
       const { worktreePath: wp, data } = payload as { worktreePath: string; data: string };
       if (wp === worktreePath) term.write(data);
     };
-    window.relay.on('terminal:data', onData);
+    const offData = window.relay.on('terminal:data', onData);
 
     const onTermData = term.onData((data) => {
       window.relay.invoke('terminal:write', { worktreePath, data });
@@ -60,7 +60,7 @@ export default function TerminalEmbed({ worktreePath }: Props) {
 
     return () => {
       window.removeEventListener('terminal:refit', refit);
-      window.relay.off('terminal:data', onData);
+      offData();
       onTermData.dispose();
       observer.disconnect();
       term.dispose();
