@@ -146,7 +146,7 @@ export default function AddBranchModal({ groupId, onClose }: AddBranchModalProps
         >
           {repoDisplayName ?? <span className="text-[var(--color-mac-muted)]">Select folder…</span>}
         </button>
-        {repoError && <p className="text-[11px] text-red-400 mb-2">{repoError}</p>}
+        {repoError && <p className="text-[11px] text-red-400 mb-2" style={{ userSelect: 'text' }}>{repoError}</p>}
         {!repoError && <div className="mb-2" />}
 
         {/* Default branch */}
@@ -177,7 +177,7 @@ export default function AddBranchModal({ groupId, onClose }: AddBranchModalProps
           disabled={loading || !repoRootPath}
         />
 
-        {error && <p className="text-[12px] text-red-400 mb-3">{error}</p>}
+        {error && <p className="text-[12px] text-red-400 mb-3" style={{ userSelect: 'text' }}>{error}</p>}
 
         <div className="flex justify-end gap-2">
           <button
