@@ -76,7 +76,7 @@ body,
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  background: var(--color-mac-surface);
+  background: rgba(30, 30, 30, 0.85);
   display: flex;
   flex-direction: column;
 }
@@ -88,7 +88,7 @@ body,
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--color-mac-surface);
+  background: rgba(30, 30, 30, 0.85);
 }
 
 /* ── Dividers ──────────────────────────────────────────────── */
