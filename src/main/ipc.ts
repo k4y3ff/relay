@@ -39,15 +39,19 @@ async function getWorktrees(repoRoot: string): Promise<Worktree[]> {
     });
 }
 
+async function getCurrentBranch(worktreePath: string): Promise<string> {
+  const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: worktreePath });
+  const branch = stdout.trim();
+  return branch === 'HEAD' ? '(detached)' : branch;
+}
+
 async function hydrateBranch(persisted: PersistedBranch): Promise<BranchEntry | null> {
   try {
-    const worktrees = await getWorktrees(persisted.repoRootPath);
-    const worktree = worktrees.find((wt) => wt.path === persisted.worktreePath);
-    if (!worktree) return null;
+    const branch = await getCurrentBranch(persisted.worktreePath);
     return {
       repoRootPath: persisted.repoRootPath,
       repoName: path.basename(persisted.repoRootPath),
-      worktree,
+      worktree: { path: persisted.worktreePath, branch, isMain: false, isBare: false },
     };
   } catch {
     return null;
@@ -101,13 +105,24 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
-  // taskgroups:add-branch — validate repo, create worktree, persist branch in group
+  // settings:get-worktrees-dir — return the configured worktrees directory
+  ipcMain.handle('settings:get-worktrees-dir', (): string | null => store.get('worktreesDir'));
+
+  // settings:set-worktrees-dir — persist the worktrees directory
+  ipcMain.handle('settings:set-worktrees-dir', (_event, { dir }: { dir: string }): void => {
+    store.set('worktreesDir', dir);
+  });
+
+  // taskgroups:add-branch — validate repo, create worktree in worktreesDir, persist
   ipcMain.handle(
     'taskgroups:add-branch',
     async (
       _event,
       { groupId, folderPath, branchName, createNew }: { groupId: string; folderPath: string; branchName: string; createNew: boolean }
     ): Promise<BranchEntry> => {
+      const worktreesDir = store.get('worktreesDir');
+      if (!worktreesDir) throw new Error('WORKTREES_DIR_NOT_SET');
+
       let repoRootPath: string;
       try {
         const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], { cwd: folderPath });
@@ -118,7 +133,7 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
 
       const repoName = path.basename(repoRootPath);
       const safeBranch = branchName.replace(/\//g, '-');
-      const worktreePath = path.join(repoRootPath, '..', `${repoName}-${safeBranch}`);
+      const worktreePath = path.join(worktreesDir, `${repoName}-${safeBranch}`);
 
       const args = createNew
         ? ['worktree', 'add', '-b', branchName, worktreePath]
@@ -127,7 +142,6 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
       await execFileAsync('git', args, { cwd: repoRootPath });
 
       const newWt: Worktree = { path: worktreePath, branch: branchName, isMain: false, isBare: false };
-
       const persistedBranch: PersistedBranch = { repoRootPath, worktreePath };
       const existing = store.get('taskGroups');
       store.set(

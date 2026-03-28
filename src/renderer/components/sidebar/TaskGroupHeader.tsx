@@ -37,7 +37,7 @@ export default function TaskGroupHeader({ group, onAddBranch }: TaskGroupHeaderP
   }
 
   const menuItems = [
-    { label: 'Add branch', action: onAddBranch },
+    { label: 'Add worktree', action: onAddBranch },
     { label: 'Rename', action: () => setRenaming(true) },
     { label: 'Delete group', danger: true, action: () => removeTaskGroup(group.id) },
   ];
