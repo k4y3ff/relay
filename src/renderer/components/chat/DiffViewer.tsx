@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { html } from 'diff2html';
 import 'diff2html/bundles/css/diff2html.min.css';
-import { useRepo } from '../../context/RepoContext';
 
 interface Props {
   worktreePath: string;
@@ -12,7 +11,6 @@ interface Props {
 }
 
 export default function DiffViewer({ worktreePath, filePath, status, added, deleted }: Props) {
-  const { setActiveDiffFile } = useRepo();
   const [diffHtml, setDiffHtml] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,9 +41,6 @@ export default function DiffViewer({ worktreePath, filePath, status, added, dele
   return (
     <div className="diff-viewer">
       <div className="diff-viewer-header">
-        <button className="diff-back-btn" onClick={() => setActiveDiffFile(null)}>
-          ← Back to chat
-        </button>
         <span className="diff-filepath">{filePath}</span>
         <span className="diff-counts">
           {added > 0 && <span className="diff-added">+{added}</span>}

@@ -101,7 +101,7 @@ const STATUS_LABELS: Record<string, string> = {
 type View = 'changes' | 'all';
 
 export default function ChangedFilesPane({ style }: Props) {
-  const { activeWorktreePath, activeDiffFile, setActiveDiffFile } = useRepo();
+  const { activeWorktreePath, activePaneTab, openDiffTab } = useRepo();
   const [view, setView] = useState<View>('changes');
   const [files, setFiles] = useState<ChangedFile[]>([]);
   const [allFiles, setAllFiles] = useState<string[]>([]);
@@ -224,8 +224,8 @@ export default function ChangedFilesPane({ style }: Props) {
           files.map((file) => (
             <button
               key={file.path}
-              className={`changed-files-row${activeDiffFile?.path === file.path ? ' changed-files-row-active' : ''}`}
-              onClick={() => setActiveDiffFile(file)}
+              className={`changed-files-row${activePaneTab === file.path ? ' changed-files-row-active' : ''}`}
+              onClick={() => openDiffTab(file)}
               title={file.path}
             >
               <span

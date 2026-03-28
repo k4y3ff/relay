@@ -6,7 +6,8 @@ import type { TaskGroup, BranchEntry, ChangedFile } from '../types/repo';
 interface TaskGroupState {
   taskGroups: TaskGroup[];
   activeWorktreePath: string | null;
-  activeDiffFile: ChangedFile | null;
+  diffTabs: ChangedFile[];
+  activePaneTab: 'chat' | string;
   collapsedGroups: Set<string>;
   loading: boolean;
 }
@@ -19,7 +20,9 @@ type Action =
   | { type: 'ADD_BRANCH'; groupId: string; branch: BranchEntry }
   | { type: 'REMOVE_BRANCH'; groupId: string; worktreePath: string }
   | { type: 'SELECT_WORKTREE'; path: string | null }
-  | { type: 'SET_DIFF_FILE'; file: ChangedFile | null }
+  | { type: 'OPEN_DIFF_TAB'; file: ChangedFile }
+  | { type: 'CLOSE_DIFF_TAB'; filePath: string }
+  | { type: 'SELECT_PANE_TAB'; tabId: string }
   | { type: 'TOGGLE_COLLAPSED'; groupId: string }
   | { type: 'SET_LOADING'; loading: boolean };
 
@@ -59,9 +62,28 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
           state.activeWorktreePath === action.worktreePath ? null : state.activeWorktreePath,
       };
     case 'SELECT_WORKTREE':
-      return { ...state, activeWorktreePath: action.path, activeDiffFile: null };
-    case 'SET_DIFF_FILE':
-      return { ...state, activeDiffFile: action.file };
+      return { ...state, activeWorktreePath: action.path, diffTabs: [], activePaneTab: 'chat' };
+    case 'OPEN_DIFF_TAB': {
+      const already = state.diffTabs.some((t) => t.path === action.file.path);
+      return {
+        ...state,
+        diffTabs: already ? state.diffTabs : [...state.diffTabs, action.file],
+        activePaneTab: action.file.path,
+      };
+    }
+    case 'CLOSE_DIFF_TAB': {
+      const idx = state.diffTabs.findIndex((t) => t.path === action.filePath);
+      if (idx === -1) return state;
+      const newTabs = state.diffTabs.filter((t) => t.path !== action.filePath);
+      let newActive = state.activePaneTab;
+      if (state.activePaneTab === action.filePath) {
+        // Switch to neighbouring tab or chat
+        newActive = newTabs[Math.max(0, idx - 1)]?.path ?? 'chat';
+      }
+      return { ...state, diffTabs: newTabs, activePaneTab: newActive };
+    }
+    case 'SELECT_PANE_TAB':
+      return { ...state, activePaneTab: action.tabId };
     case 'TOGGLE_COLLAPSED': {
       const next = new Set(state.collapsedGroups);
       next.has(action.groupId) ? next.delete(action.groupId) : next.add(action.groupId);
@@ -77,7 +99,8 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
 const initialState: TaskGroupState = {
   taskGroups: [],
   activeWorktreePath: null,
-  activeDiffFile: null as ChangedFile | null,
+  diffTabs: [],
+  activePaneTab: 'chat',
   collapsedGroups: new Set(),
   loading: true,
 };
@@ -91,7 +114,9 @@ interface TaskGroupContextValue extends TaskGroupState {
   addBranchToGroup: (groupId: string, folderPath: string, branchName: string, defaultBranch: string) => Promise<BranchEntry>;
   removeBranchFromGroup: (groupId: string, worktreePath: string, repoRootPath: string) => Promise<void>;
   selectWorktree: (path: string) => void;
-  setActiveDiffFile: (file: ChangedFile | null) => void;
+  openDiffTab: (file: ChangedFile) => void;
+  closeDiffTab: (filePath: string) => void;
+  selectPaneTab: (tabId: string) => void;
   toggleGroupCollapsed: (groupId: string) => void;
 }
 
@@ -160,8 +185,16 @@ export function RepoProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SELECT_WORKTREE', path });
   }, []);
 
-  const setActiveDiffFile = useCallback((file: ChangedFile | null) => {
-    dispatch({ type: 'SET_DIFF_FILE', file });
+  const openDiffTab = useCallback((file: ChangedFile) => {
+    dispatch({ type: 'OPEN_DIFF_TAB', file });
+  }, []);
+
+  const closeDiffTab = useCallback((filePath: string) => {
+    dispatch({ type: 'CLOSE_DIFF_TAB', filePath });
+  }, []);
+
+  const selectPaneTab = useCallback((tabId: string) => {
+    dispatch({ type: 'SELECT_PANE_TAB', tabId });
   }, []);
 
   const toggleGroupCollapsed = useCallback((groupId: string) => {
@@ -178,7 +211,9 @@ export function RepoProvider({ children }: { children: ReactNode }) {
         addBranchToGroup,
         removeBranchFromGroup,
         selectWorktree,
-        setActiveDiffFile,
+        openDiffTab,
+        closeDiffTab,
+        selectPaneTab,
         toggleGroupCollapsed,
       }}
     >
