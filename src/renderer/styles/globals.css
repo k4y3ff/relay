@@ -90,7 +90,7 @@ body,
   height: 44px;
   flex-shrink: 0;
   -webkit-app-region: drag;
-  background: rgba(28, 28, 28, 0.82);
+  background: rgba(28, 28, 28, 0.95);
 }
 
 /* Panel row fills remaining height */
@@ -107,7 +107,7 @@ body,
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  background: rgba(32, 32, 32, 0.78);
+  background: rgba(32, 32, 32, 0.93);
 }
 
 /* ── Center pane ───────────────────────────────────────────── */
@@ -116,7 +116,7 @@ body,
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  background: rgba(30, 30, 30, 0.85);
+  background: rgba(30, 30, 30, 0.95);
   display: flex;
   flex-direction: column;
 }
@@ -191,7 +191,7 @@ body,
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(30, 30, 30, 0.85);
+  background: rgba(30, 30, 30, 0.95);
 }
 
 /* ── Dividers ──────────────────────────────────────────────── */
