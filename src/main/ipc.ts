@@ -360,13 +360,27 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
-  // fs:read-file — read raw file content
+  // fs:read-file — read raw file content, with binary detection
   ipcMain.handle(
     'fs:read-file',
-    async (_event, { worktreePath, filePath }: { worktreePath: string; filePath: string }): Promise<string> => {
+    async (_event, { worktreePath, filePath }: { worktreePath: string; filePath: string }): Promise<{ content: string; isBinary: boolean }> => {
       const { readFile } = await import('node:fs/promises');
       const fullPath = path.join(worktreePath, filePath);
-      return readFile(fullPath, 'utf-8');
+      const buf = await readFile(fullPath);
+      const sample = buf.slice(0, 8192);
+      const isBinary = sample.includes(0);
+      if (isBinary) return { content: '', isBinary: true };
+      return { content: buf.toString('utf-8'), isBinary: false };
+    }
+  );
+
+  // fs:write-file — write content back to a file in the worktree
+  ipcMain.handle(
+    'fs:write-file',
+    async (_event, { worktreePath, filePath, content }: { worktreePath: string; filePath: string; content: string }): Promise<void> => {
+      const { writeFile } = await import('node:fs/promises');
+      const fullPath = path.join(worktreePath, filePath);
+      await writeFile(fullPath, content, 'utf-8');
     }
   );
 

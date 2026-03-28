@@ -9,6 +9,7 @@ interface TaskGroupState {
   diffTabs: ChangedFile[];
   activePaneTab: 'chat' | string;
   collapsedGroups: Set<string>;
+  dirtyTabs: Set<string>;
   loading: boolean;
 }
 
@@ -24,7 +25,9 @@ type Action =
   | { type: 'CLOSE_DIFF_TAB'; filePath: string }
   | { type: 'SELECT_PANE_TAB'; tabId: string }
   | { type: 'TOGGLE_COLLAPSED'; groupId: string }
-  | { type: 'SET_LOADING'; loading: boolean };
+  | { type: 'SET_LOADING'; loading: boolean }
+  | { type: 'MARK_TAB_DIRTY'; filePath: string }
+  | { type: 'MARK_TAB_CLEAN'; filePath: string };
 
 function reducer(state: TaskGroupState, action: Action): TaskGroupState {
   switch (action.type) {
@@ -62,7 +65,7 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
           state.activeWorktreePath === action.worktreePath ? null : state.activeWorktreePath,
       };
     case 'SELECT_WORKTREE':
-      return { ...state, activeWorktreePath: action.path, diffTabs: [], activePaneTab: 'chat' };
+      return { ...state, activeWorktreePath: action.path, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
     case 'OPEN_DIFF_TAB': {
       const already = state.diffTabs.some((t) => t.path === action.file.path);
       return {
@@ -80,7 +83,19 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
         // Switch to neighbouring tab or chat
         newActive = newTabs[Math.max(0, idx - 1)]?.path ?? 'chat';
       }
-      return { ...state, diffTabs: newTabs, activePaneTab: newActive };
+      const newDirtyTabs = new Set(state.dirtyTabs);
+      newDirtyTabs.delete(action.filePath);
+      return { ...state, diffTabs: newTabs, activePaneTab: newActive, dirtyTabs: newDirtyTabs };
+    }
+    case 'MARK_TAB_DIRTY': {
+      const next = new Set(state.dirtyTabs);
+      next.add(action.filePath);
+      return { ...state, dirtyTabs: next };
+    }
+    case 'MARK_TAB_CLEAN': {
+      const next = new Set(state.dirtyTabs);
+      next.delete(action.filePath);
+      return { ...state, dirtyTabs: next };
     }
     case 'SELECT_PANE_TAB':
       return { ...state, activePaneTab: action.tabId };
@@ -102,6 +117,7 @@ const initialState: TaskGroupState = {
   diffTabs: [],
   activePaneTab: 'chat',
   collapsedGroups: new Set(),
+  dirtyTabs: new Set(),
   loading: true,
 };
 
@@ -118,6 +134,8 @@ interface TaskGroupContextValue extends TaskGroupState {
   closeDiffTab: (filePath: string) => void;
   selectPaneTab: (tabId: string) => void;
   toggleGroupCollapsed: (groupId: string) => void;
+  markTabDirty: (filePath: string) => void;
+  markTabClean: (filePath: string) => void;
 }
 
 const TaskGroupContext = createContext<TaskGroupContextValue | null>(null);
@@ -201,6 +219,14 @@ export function RepoProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'TOGGLE_COLLAPSED', groupId });
   }, []);
 
+  const markTabDirty = useCallback((filePath: string) => {
+    dispatch({ type: 'MARK_TAB_DIRTY', filePath });
+  }, []);
+
+  const markTabClean = useCallback((filePath: string) => {
+    dispatch({ type: 'MARK_TAB_CLEAN', filePath });
+  }, []);
+
   return (
     <TaskGroupContext.Provider
       value={{
@@ -215,6 +241,8 @@ export function RepoProvider({ children }: { children: ReactNode }) {
         closeDiffTab,
         selectPaneTab,
         toggleGroupCollapsed,
+        markTabDirty,
+        markTabClean,
       }}
     >
       {children}

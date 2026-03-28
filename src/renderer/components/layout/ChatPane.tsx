@@ -9,7 +9,7 @@ function basename(filePath: string): string {
 }
 
 export default function ChatPane() {
-  const { activeWorktreePath, diffTabs, activePaneTab, closeDiffTab, selectPaneTab } = useRepo();
+  const { activeWorktreePath, diffTabs, activePaneTab, dirtyTabs, closeDiffTab, selectPaneTab } = useRepo();
   const [mountedPaths, setMountedPaths] = useState<string[]>([]);
 
   // Track all visited worktree paths so their terminals stay mounted
@@ -50,6 +50,7 @@ export default function ChatPane() {
               onClick={() => selectPaneTab(file.path)}
               title={file.path}
             >
+              {dirtyTabs.has(file.path) && <span className="chat-tab-dirty-dot" />}
               {basename(file.path)}
               <span
                 className="chat-tab-close"
