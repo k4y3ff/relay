@@ -208,6 +208,16 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
+  // git:all-files — list all tracked files in the worktree
+  ipcMain.handle(
+    'git:all-files',
+    async (_event, { worktreePath }: { worktreePath: string }): Promise<string[]> => {
+      const { stdout } = await execFileAsync('git', ['ls-files'], { cwd: worktreePath })
+        .catch(() => ({ stdout: '' }));
+      return stdout.trim().split('\n').filter(Boolean);
+    }
+  );
+
   // git:diff-file — return unified diff string for a single file
   ipcMain.handle(
     'git:diff-file',
