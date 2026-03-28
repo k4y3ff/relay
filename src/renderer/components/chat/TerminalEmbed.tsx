@@ -14,7 +14,7 @@ export default function TerminalEmbed({ worktreePath }: Props) {
     const container = containerRef.current;
     if (!container) return;
 
-    const term = new Terminal({ allowProposedApi: true });
+    const term = new Terminal({ allowProposedApi: true, fontSize: 13 });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);
