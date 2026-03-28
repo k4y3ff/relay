@@ -624,6 +624,12 @@ body,
   overflow: auto;
 }
 
+.file-editor-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .file-viewer-content {
   margin: 0;
   padding: 12px 16px;
@@ -633,6 +639,50 @@ body,
   white-space: pre;
   tab-size: 2;
   user-select: text;
+}
+
+.file-editor-save-btn {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  background: var(--color-mac-accent);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.file-editor-save-btn:hover {
+  background: #2196ff;
+}
+
+.chat-tab-dirty-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-mac-accent);
+  flex-shrink: 0;
+  display: inline-block;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.cm-editor {
+  flex: 1;
+  height: 100%;
+  font-family: var(--font-mono) !important;
+  font-size: 12px;
+  user-select: text;
+}
+
+.cm-scroller {
+  overflow: auto !important;
+}
+
+.cm-editor .cm-gutters {
+  background: var(--color-mac-surface);
+  border-right: 1px solid var(--color-mac-border);
 }
 
 .diff-loading,

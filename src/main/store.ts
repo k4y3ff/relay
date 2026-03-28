@@ -7,6 +7,8 @@ interface StoreSchema {
   repoDefaults: Record<string, string>;
   notificationsEnabled: boolean;
   soundEffectsEnabled: boolean;
+  editorTheme: string;
+  editorWordWrap: boolean;
 }
 
 export const store = new Store<StoreSchema>({
@@ -16,5 +18,7 @@ export const store = new Store<StoreSchema>({
     repoDefaults: {},
     notificationsEnabled: true,
     soundEffectsEnabled: true,
+    editorTheme: 'one-dark',
+    editorWordWrap: false,
   },
 });

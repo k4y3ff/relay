@@ -179,6 +179,22 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('soundEffectsEnabled', enabled);
   });
 
+  // settings:get-editor-theme — return the saved editor theme id
+  ipcMain.handle('settings:get-editor-theme', (): string => store.get('editorTheme'));
+
+  // settings:set-editor-theme — persist the editor theme preference
+  ipcMain.handle('settings:set-editor-theme', (_event, { theme }: { theme: string }): void => {
+    store.set('editorTheme', theme);
+  });
+
+  // settings:get-editor-word-wrap — return the saved word wrap preference
+  ipcMain.handle('settings:get-editor-word-wrap', (): boolean => store.get('editorWordWrap'));
+
+  // settings:set-editor-word-wrap — persist the word wrap preference
+  ipcMain.handle('settings:set-editor-word-wrap', (_event, { enabled }: { enabled: boolean }): void => {
+    store.set('editorWordWrap', enabled);
+  });
+
   // taskgroups:add-branch — fetch default branch, create worktree off it, persist
   ipcMain.handle(
     'taskgroups:add-branch',
@@ -360,13 +376,27 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
-  // fs:read-file — read raw file content
+  // fs:read-file — read raw file content, with binary detection
   ipcMain.handle(
     'fs:read-file',
-    async (_event, { worktreePath, filePath }: { worktreePath: string; filePath: string }): Promise<string> => {
+    async (_event, { worktreePath, filePath }: { worktreePath: string; filePath: string }): Promise<{ content: string; isBinary: boolean }> => {
       const { readFile } = await import('node:fs/promises');
       const fullPath = path.join(worktreePath, filePath);
-      return readFile(fullPath, 'utf-8');
+      const buf = await readFile(fullPath);
+      const sample = buf.slice(0, 8192);
+      const isBinary = sample.includes(0);
+      if (isBinary) return { content: '', isBinary: true };
+      return { content: buf.toString('utf-8'), isBinary: false };
+    }
+  );
+
+  // fs:write-file — write content back to a file in the worktree
+  ipcMain.handle(
+    'fs:write-file',
+    async (_event, { worktreePath, filePath, content }: { worktreePath: string; filePath: string; content: string }): Promise<void> => {
+      const { writeFile } = await import('node:fs/promises');
+      const fullPath = path.join(worktreePath, filePath);
+      await writeFile(fullPath, content, 'utf-8');
     }
   );
 
