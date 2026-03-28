@@ -140,9 +140,11 @@ body,
 /* ── Sidebar ───────────────────────────────────────────────── */
 
 .worktree-row-active {
-  border-left: 2px solid var(--color-mac-accent);
-  padding-left: calc(0.75rem - 2px);
-  background: rgba(10, 132, 255, 0.12);
+  background: rgba(0, 122, 255, 0.25);
+  border-radius: 6px;
+  margin: 0 6px;
+  padding-left: calc(0.75rem - 6px);
+  padding-right: calc(0.25rem);
 }
 
 /* ── Spinner animation ─────────────────────────────────────── */
@@ -347,9 +349,11 @@ body,
 }
 
 .changed-files-row-active {
-  background: rgba(10, 132, 255, 0.1);
-  border-left: 2px solid var(--color-mac-accent);
-  padding-left: 8px;
+  background: rgba(0, 122, 255, 0.22);
+  border-radius: 6px;
+  margin: 0 6px;
+  padding-left: 4px;
+  padding-right: 4px;
 }
 
 .changed-files-status {
