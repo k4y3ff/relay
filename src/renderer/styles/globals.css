@@ -90,6 +90,7 @@ body,
   height: 44px;
   flex-shrink: 0;
   -webkit-app-region: drag;
+  background: rgba(28, 28, 28, 0.82);
 }
 
 /* Panel row fills remaining height */
@@ -102,13 +103,11 @@ body,
 
 /* ── Sidebar ───────────────────────────────────────────────── */
 
-/* Background is intentionally transparent so macOS vibrancy
-   (setVibrancy('sidebar')) bleeds through from behind the web layer.
-   backdrop-filter does NOT work for this — it must be the native view. */
 .sidebar {
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  background: rgba(32, 32, 32, 0.78);
 }
 
 /* ── Center pane ───────────────────────────────────────────── */
