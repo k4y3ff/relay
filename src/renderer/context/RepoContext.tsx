@@ -88,7 +88,7 @@ interface TaskGroupContextValue extends TaskGroupState {
   createTaskGroup: (name: string) => Promise<TaskGroup>;
   removeTaskGroup: (groupId: string) => Promise<void>;
   renameTaskGroup: (groupId: string, name: string) => Promise<void>;
-  addBranchToGroup: (groupId: string, folderPath: string, branchName: string, createNew: boolean) => Promise<BranchEntry>;
+  addBranchToGroup: (groupId: string, folderPath: string, branchName: string, defaultBranch: string) => Promise<BranchEntry>;
   removeBranchFromGroup: (groupId: string, worktreePath: string, repoRootPath: string) => Promise<void>;
   selectWorktree: (path: string) => void;
   setActiveDiffFile: (file: ChangedFile | null) => void;
@@ -127,12 +127,12 @@ export function RepoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addBranchToGroup = useCallback(
-    async (groupId: string, folderPath: string, branchName: string, createNew: boolean): Promise<BranchEntry> => {
+    async (groupId: string, folderPath: string, branchName: string, defaultBranch: string): Promise<BranchEntry> => {
       const branch = (await window.relay.invoke('taskgroups:add-branch', {
         groupId,
         folderPath,
         branchName,
-        createNew,
+        defaultBranch,
       })) as BranchEntry;
       dispatch({ type: 'ADD_BRANCH', groupId, branch });
       dispatch({ type: 'SELECT_WORKTREE', path: branch.worktree.path });

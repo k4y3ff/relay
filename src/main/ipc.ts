@@ -105,6 +105,38 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
+  // git:get-repo-info — resolve repo root and look up (or auto-detect) default branch
+  ipcMain.handle(
+    'git:get-repo-info',
+    async (_event, { folderPath }: { folderPath: string }): Promise<{ repoRootPath: string; repoName: string; defaultBranch: string | null }> => {
+      let repoRootPath: string;
+      try {
+        const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], { cwd: folderPath });
+        repoRootPath = stdout.trim();
+      } catch {
+        throw new Error('NOT_A_GIT_REPO');
+      }
+
+      const repoName = path.basename(repoRootPath);
+      const repoDefaults = store.get('repoDefaults');
+      let defaultBranch: string | null = repoDefaults[repoRootPath] ?? null;
+
+      if (!defaultBranch) {
+        try {
+          const { stdout } = await execFileAsync(
+            'git', ['symbolic-ref', 'refs/remotes/origin/HEAD', '--short'],
+            { cwd: repoRootPath }
+          );
+          defaultBranch = stdout.trim().replace(/^origin\//, '') || null;
+        } catch {
+          // not detectable — user must enter manually
+        }
+      }
+
+      return { repoRootPath, repoName, defaultBranch };
+    }
+  );
+
   // settings:get-worktrees-dir — return the configured worktrees directory
   ipcMain.handle('settings:get-worktrees-dir', (): string | null => store.get('worktreesDir'));
 
@@ -113,12 +145,12 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('worktreesDir', dir);
   });
 
-  // taskgroups:add-branch — validate repo, create worktree in worktreesDir, persist
+  // taskgroups:add-branch — fetch default branch, create worktree off it, persist
   ipcMain.handle(
     'taskgroups:add-branch',
     async (
       _event,
-      { groupId, folderPath, branchName, createNew }: { groupId: string; folderPath: string; branchName: string; createNew: boolean }
+      { groupId, folderPath, branchName, defaultBranch }: { groupId: string; folderPath: string; branchName: string; defaultBranch: string }
     ): Promise<BranchEntry> => {
       const worktreesDir = store.get('worktreesDir');
       if (!worktreesDir) throw new Error('WORKTREES_DIR_NOT_SET');
@@ -131,14 +163,20 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
         throw new Error('NOT_A_GIT_REPO');
       }
 
+      // Save default branch for this repo
+      const repoDefaults = store.get('repoDefaults');
+      store.set('repoDefaults', { ...repoDefaults, [repoRootPath]: defaultBranch });
+
       const repoName = path.basename(repoRootPath);
       const worktreePath = path.join(worktreesDir, repoName, branchName);
 
-      const args = createNew
-        ? ['worktree', 'add', '-b', branchName, worktreePath]
-        : ['worktree', 'add', worktreePath, branchName];
-
-      await execFileAsync('git', args, { cwd: repoRootPath });
+      // Fetch latest of default branch then create worktree off origin/<defaultBranch>
+      await execFileAsync('git', ['fetch', 'origin', defaultBranch], { cwd: repoRootPath });
+      await execFileAsync(
+        'git',
+        ['worktree', 'add', '-b', branchName, worktreePath, `origin/${defaultBranch}`],
+        { cwd: repoRootPath }
+      );
 
       const newWt: Worktree = { path: worktreePath, branch: branchName, isMain: false, isBare: false };
       const persistedBranch: PersistedBranch = { repoRootPath, worktreePath };
