@@ -505,6 +505,20 @@ body,
   font-size: 13px;
   font-family: var(--font-mono);
   min-width: 0;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+  -webkit-app-region: no-drag;
+  user-select: none;
+}
+
+.all-files-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.all-files-row.changed-files-row-active {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .all-files-dir-row {
@@ -608,6 +622,17 @@ body,
 .diff-viewer-body {
   flex: 1;
   overflow: auto;
+}
+
+.file-viewer-content {
+  margin: 0;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-mac-text);
+  white-space: pre;
+  tab-size: 2;
 }
 
 .diff-loading,

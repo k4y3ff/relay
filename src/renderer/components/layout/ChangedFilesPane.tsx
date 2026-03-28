@@ -35,11 +35,15 @@ function FileTreeNode({
   depth,
   expandedDirs,
   toggleDir,
+  onFileClick,
+  activeFilePath,
 }: {
   node: TreeNode;
   depth: number;
   expandedDirs: Set<string>;
   toggleDir: (path: string) => void;
+  onFileClick: (path: string) => void;
+  activeFilePath: string;
 }) {
   const indent = depth * 14 + 10;
   if (node.isDir) {
@@ -64,19 +68,22 @@ function FileTreeNode({
               depth={depth + 1}
               expandedDirs={expandedDirs}
               toggleDir={toggleDir}
+              onFileClick={onFileClick}
+              activeFilePath={activeFilePath}
             />
           ))}
       </>
     );
   }
   return (
-    <div
-      className="all-files-row"
+    <button
+      className={`all-files-row${activeFilePath === node.fullPath ? ' changed-files-row-active' : ''}`}
       style={{ paddingLeft: indent }}
       title={node.fullPath}
+      onClick={() => onFileClick(node.fullPath)}
     >
       <span className="changed-files-path">{node.name}</span>
-    </div>
+    </button>
   );
 }
 
@@ -215,6 +222,8 @@ export default function ChangedFilesPane({ style }: Props) {
                 depth={0}
                 expandedDirs={expandedDirs}
                 toggleDir={toggleDir}
+                onFileClick={(p) => openDiffTab({ path: p, status: 'R', added: 0, deleted: 0 })}
+                activeFilePath={activePaneTab}
               />
             ))
           )

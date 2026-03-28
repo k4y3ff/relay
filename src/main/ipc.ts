@@ -344,6 +344,16 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
+  // fs:read-file — read raw file content
+  ipcMain.handle(
+    'fs:read-file',
+    async (_event, { worktreePath, filePath }: { worktreePath: string; filePath: string }): Promise<string> => {
+      const { readFile } = await import('node:fs/promises');
+      const fullPath = path.join(worktreePath, filePath);
+      return readFile(fullPath, 'utf-8');
+    }
+  );
+
   // git:diff-file — return unified diff string for a single file
   ipcMain.handle(
     'git:diff-file',

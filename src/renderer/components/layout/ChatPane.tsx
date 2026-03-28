@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useRepo } from '../../context/RepoContext';
 import TerminalEmbed from '../chat/TerminalEmbed';
 import DiffViewer from '../chat/DiffViewer';
+import FileViewer from '../chat/FileViewer';
 
 function basename(filePath: string): string {
   return filePath.split('/').pop() ?? filePath;
@@ -71,7 +72,10 @@ export default function ChatPane() {
           </div>
         );
       })}
-      {activeDiffFile && activeWorktreePath && (
+      {activeDiffFile && activeDiffFile.status === 'R' && activeWorktreePath && (
+        <FileViewer worktreePath={activeWorktreePath} filePath={activeDiffFile.path} />
+      )}
+      {activeDiffFile && activeDiffFile.status !== 'R' && activeWorktreePath && (
         <DiffViewer
           worktreePath={activeWorktreePath}
           filePath={activeDiffFile.path}
