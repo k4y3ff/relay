@@ -1,12 +1,12 @@
 import Store from 'electron-store';
-import type { PersistedRepo } from '../renderer/types/repo.js';
+import type { PersistedTaskGroup } from '../renderer/types/repo.js';
 
 interface StoreSchema {
-  repos: PersistedRepo[];
+  taskGroups: PersistedTaskGroup[];
 }
 
 export const store = new Store<StoreSchema>({
   defaults: {
-    repos: [],
+    taskGroups: [],
   },
 });

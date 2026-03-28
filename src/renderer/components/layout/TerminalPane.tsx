@@ -23,7 +23,7 @@ const MAX_TABS = 5;
 const DEFAULT_LABEL = 'zsh';
 
 export default function TerminalPane({ style }: Props) {
-  const { activeWorktreePath, repos } = useRepo();
+  const { activeWorktreePath, taskGroups } = useRepo();
 
   // Ref map: worktreePath -> tab state. Mutations don't trigger re-renders;
   // call syncState() after any mutation to flush to React state.
@@ -163,13 +163,14 @@ export default function TerminalPane({ style }: Props) {
   const displayPath = useMemo(() => {
     if (!activeWorktreePath) return '';
     let branch = '';
-    for (const repo of repos) {
-      const wt = repo.worktrees.find((w) => w.path === activeWorktreePath);
-      if (wt) { branch = wt.branch; break; }
+    outer: for (const group of taskGroups) {
+      for (const b of group.branches) {
+        if (b.worktree.path === activeWorktreePath) { branch = b.worktree.branch; break outer; }
+      }
     }
     const shortened = activeWorktreePath.replace(/^\/Users\/[^/]+/, '~');
     return branch ? `${shortened} [${branch}]` : shortened;
-  }, [activeWorktreePath, repos]);
+  }, [activeWorktreePath, taskGroups]);
 
   if (!activeWorktreePath) {
     return (

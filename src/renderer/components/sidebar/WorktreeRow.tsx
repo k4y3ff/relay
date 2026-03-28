@@ -1,15 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Worktree, Repo, ChangedFile } from '../../types/repo';
+import type { Worktree, ChangedFile } from '../../types/repo';
 import { useRepo } from '../../context/RepoContext';
 import OverflowMenu from './OverflowMenu';
 
 interface WorktreeRowProps {
-  repo: Repo;
+  groupId: string;
+  repoName: string;
+  repoRootPath: string;
   worktree: Worktree;
 }
 
-export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
-  const { activeWorktreePath, selectWorktree, removeWorktree } = useRepo();
+export default function WorktreeRow({ groupId, repoName, repoRootPath, worktree }: WorktreeRowProps) {
+  const { activeWorktreePath, selectWorktree, removeBranchFromGroup } = useRepo();
   const isActive = activeWorktreePath === worktree.path;
   const [stats, setStats] = useState<{ added: number; deleted: number; fileCount: number } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -20,13 +22,11 @@ export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
         const files = (await window.relay.invoke('git:changed-files', {
           worktreePath: worktree.path,
         })) as ChangedFile[];
-        console.log(`[WorktreeRow] ${worktree.branch}: ${files.length} files`, files);
         if (files.length === 0) { setStats(null); return; }
         const added = files.reduce((s, f) => s + f.added, 0);
         const deleted = files.reduce((s, f) => s + f.deleted, 0);
         setStats({ added, deleted, fileCount: files.length });
-      } catch (e) {
-        console.error(`[WorktreeRow] ${worktree.branch} error:`, e);
+      } catch {
         setStats(null);
       }
     };
@@ -48,7 +48,7 @@ export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
     {
       label: 'Remove worktree',
       danger: true,
-      action: () => removeWorktree(repo.id, worktree.path),
+      action: () => removeBranchFromGroup(groupId, worktree.path, repoRootPath),
     },
   ];
 
@@ -62,7 +62,7 @@ export default function WorktreeRow({ repo, worktree }: WorktreeRowProps) {
           : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'
       }`}
     >
-      <span className="truncate flex-1 ml-4">{worktree.branch}</span>
+      <span className="truncate flex-1 ml-4">{repoName} / {worktree.branch}</span>
       <div className="relative shrink-0 w-5 flex items-center justify-end">
         {stats && (
           <span className="absolute right-0 flex gap-1 text-[11px] font-mono whitespace-nowrap group-hover:hidden">

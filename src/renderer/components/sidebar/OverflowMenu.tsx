@@ -29,12 +29,11 @@ export default function OverflowMenu({ items }: OverflowMenuProps) {
 
   useEffect(() => {
     if (!open) return;
-    function onClickOutside(e: MouseEvent) {
-      e.stopPropagation();
+    function onClickOutside() {
       setOpen(false);
     }
-    document.addEventListener('click', onClickOutside, { capture: true });
-    return () => document.removeEventListener('click', onClickOutside, { capture: true });
+    document.addEventListener('click', onClickOutside);
+    return () => document.removeEventListener('click', onClickOutside);
   }, [open]);
 
   return (
