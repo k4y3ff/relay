@@ -12,10 +12,10 @@ export default function Sidebar() {
       {/* Repo list */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {loading && (
-          <p className="text-[12px] text-[var(--color-mac-muted)] px-4 py-3">Loading…</p>
+          <p className="text-[13px] text-[var(--color-mac-muted)] px-4 py-3">Loading…</p>
         )}
         {!loading && repos.length === 0 && (
-          <p className="text-[12px] text-[var(--color-mac-muted)] text-center px-4 py-3">
+          <p className="text-[13px] text-[var(--color-mac-muted)] text-center px-4 py-3">
             No repositories. Add one below.
           </p>
         )}

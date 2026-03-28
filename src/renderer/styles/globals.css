@@ -144,7 +144,7 @@ body,
 
 .diff-content {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
   background: var(--color-mac-bg);
 }
 
@@ -284,7 +284,7 @@ body,
   height: 100%;
   min-height: 60px;
   color: var(--color-mac-muted);
-  font-size: 12px;
+  font-size: 13px;
   padding: 12px;
   text-align: center;
 }
@@ -299,7 +299,7 @@ body,
   border: none;
   cursor: pointer;
   color: var(--color-mac-text);
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
   text-align: left;
   -webkit-app-region: no-drag;
@@ -370,7 +370,7 @@ body,
   border: none;
   color: var(--color-mac-accent);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   padding: 2px 6px;
   border-radius: 3px;
   flex-shrink: 0;
@@ -383,7 +383,7 @@ body,
 
 .diff-filepath {
   flex: 1;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
   color: var(--color-mac-text);
   overflow: hidden;
@@ -393,7 +393,7 @@ body,
 
 .diff-counts {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 13px;
   font-family: var(--font-mono);
 }
 
@@ -413,7 +413,7 @@ body,
 .diff-loading,
 .diff-error {
   padding: 16px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-mac-muted);
 }
 
@@ -423,13 +423,13 @@ body,
 
 .diff-empty {
   padding: 16px;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-mac-muted);
 }
 
 .diff-content {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 /* ── Shell Terminal Pane ───────────────────────────────────── */
@@ -452,7 +452,7 @@ body,
 }
 
 .shell-toolbar-path {
-  font-size: 11px;
+  font-size: 13px;
   font-family: var(--font-mono);
   color: var(--color-mac-muted);
   overflow: hidden;
@@ -466,7 +466,7 @@ body,
   border: none;
   color: var(--color-mac-muted);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   font-family: var(--font-mono);
   padding: 2px 6px;
   border-radius: 3px;
@@ -504,7 +504,7 @@ body,
   border-right: 1px solid var(--color-mac-border);
   color: var(--color-mac-muted);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 13px;
   font-family: var(--font-sans);
   -webkit-app-region: no-drag;
 }
@@ -561,7 +561,7 @@ body,
   background: var(--color-mac-surface2);
   border: 1px solid var(--color-mac-accent);
   color: var(--color-mac-text);
-  font-size: 11px;
+  font-size: 13px;
   font-family: var(--font-sans);
   padding: 0 2px;
   width: 70px;
