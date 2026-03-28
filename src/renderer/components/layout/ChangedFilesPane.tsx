@@ -1,4 +1,5 @@
 import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react';
 import { useRepo } from '../../context/RepoContext';
 import type { ChangedFile } from '../../types/repo';
 
@@ -51,8 +52,8 @@ function FileTreeNode({
           onClick={() => toggleDir(node.fullPath)}
           title={node.fullPath}
         >
-          <span className="all-files-chevron">{expanded ? '▼' : '▶'}</span>
-          <span className="all-files-folder-icon">{expanded ? '📂' : '📁'}</span>
+          <span className="all-files-chevron">{expanded ? <ChevronDown size={9} /> : <ChevronRight size={9} />}</span>
+          <span className="all-files-folder-icon">{expanded ? <FolderOpen size={12} /> : <Folder size={12} />}</span>
           <span className="changed-files-path">{node.name}</span>
         </button>
         {expanded &&
