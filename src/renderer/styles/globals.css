@@ -241,12 +241,34 @@ body,
   flex-shrink: 0;
 }
 
-.changed-files-title {
+.files-tabs {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+}
+
+.files-tab {
+  background: none;
+  border: none;
+  color: var(--color-mac-muted);
+  cursor: pointer;
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-mac-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  padding: 2px 6px 4px;
+  box-shadow: inset 0 -2px 0 transparent;
+  -webkit-app-region: no-drag;
+  white-space: nowrap;
+}
+
+.files-tab:hover {
+  color: var(--color-mac-text);
+}
+
+.files-tab-active {
+  color: var(--color-mac-text);
+  box-shadow: inset 0 -2px 0 var(--color-mac-accent);
 }
 
 .changed-files-refresh {
@@ -344,6 +366,17 @@ body,
 
 .changed-files-deleted {
   color: #f87171;
+}
+
+.all-files-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 4px 10px;
+  color: var(--color-mac-text);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  min-width: 0;
 }
 
 /* ── Diff Viewer ───────────────────────────────────────────── */

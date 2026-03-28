@@ -20,9 +20,13 @@ const STATUS_LABELS: Record<string, string> = {
   '?': '?',
 };
 
+type View = 'changes' | 'all';
+
 export default function ChangedFilesPane({ style }: Props) {
   const { activeWorktreePath, activeDiffFile, setActiveDiffFile } = useRepo();
+  const [view, setView] = useState<View>('changes');
   const [files, setFiles] = useState<ChangedFile[]>([]);
+  const [allFiles, setAllFiles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -44,10 +48,29 @@ export default function ChangedFilesPane({ style }: Props) {
     }
   }, [activeWorktreePath]);
 
+  const fetchAllFiles = useCallback(async () => {
+    if (!activeWorktreePath) {
+      setAllFiles([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = (await window.relay.invoke('git:all-files', {
+        worktreePath: activeWorktreePath,
+      })) as string[];
+      setAllFiles(result);
+    } catch {
+      setAllFiles([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeWorktreePath]);
+
   // Fetch on mount and when active worktree changes
   useEffect(() => {
     fetchFiles();
-  }, [fetchFiles]);
+    fetchAllFiles();
+  }, [fetchFiles, fetchAllFiles]);
 
   // Auto-refresh every 3 seconds when window is focused
   useEffect(() => {
@@ -61,15 +84,28 @@ export default function ChangedFilesPane({ style }: Props) {
     };
   }, [fetchFiles]);
 
+  const handleRefresh = view === 'changes' ? fetchFiles : fetchAllFiles;
+
   return (
     <div style={style} className="changed-files-pane">
       <div className="changed-files-header">
-        <span className="changed-files-title">
-          Changes{files.length > 0 ? ` ${files.length}` : ''}
-        </span>
+        <div className="files-tabs">
+          <button
+            className={`files-tab${view === 'all' ? ' files-tab-active' : ''}`}
+            onClick={() => setView('all')}
+          >
+            All Files
+          </button>
+          <button
+            className={`files-tab${view === 'changes' ? ' files-tab-active' : ''}`}
+            onClick={() => setView('changes')}
+          >
+            Changes{files.length > 0 ? ` ${files.length}` : ''}
+          </button>
+        </div>
         <button
           className="changed-files-refresh"
-          onClick={fetchFiles}
+          onClick={handleRefresh}
           disabled={loading || !activeWorktreePath}
           title="Refresh"
         >
@@ -79,7 +115,17 @@ export default function ChangedFilesPane({ style }: Props) {
 
       <div className="changed-files-list">
         {!activeWorktreePath ? (
-          <div className="changed-files-empty">Select a worktree to see changes</div>
+          <div className="changed-files-empty">Select a worktree to see {view === 'all' ? 'files' : 'changes'}</div>
+        ) : view === 'all' ? (
+          allFiles.length === 0 && !loading ? (
+            <div className="changed-files-empty">No files found</div>
+          ) : (
+            allFiles.map((filePath) => (
+              <div key={filePath} className="all-files-row" title={filePath}>
+                <span className="changed-files-path">{filePath}</span>
+              </div>
+            ))
+          )
         ) : files.length === 0 && !loading ? (
           <div className="changed-files-empty">No changes since last commit</div>
         ) : (
