@@ -379,6 +379,42 @@ body,
   min-width: 0;
 }
 
+.all-files-dir-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 3px 10px;
+  color: var(--color-mac-muted);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-align: left;
+  -webkit-app-region: no-drag;
+  user-select: none;
+  min-width: 0;
+}
+
+.all-files-dir-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-mac-text);
+}
+
+.all-files-chevron {
+  flex-shrink: 0;
+  width: 12px;
+  font-size: 9px;
+  color: var(--color-mac-muted);
+  margin-right: 3px;
+}
+
+.all-files-folder-icon {
+  flex-shrink: 0;
+  margin-right: 5px;
+  font-size: 11px;
+}
+
 /* ── Diff Viewer ───────────────────────────────────────────── */
 
 .diff-viewer {
