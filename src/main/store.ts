@@ -6,6 +6,7 @@ interface StoreSchema {
   worktreesDir: string | null;
   repoDefaults: Record<string, string>;
   notificationsEnabled: boolean;
+  soundEffectsEnabled: boolean;
 }
 
 export const store = new Store<StoreSchema>({
@@ -14,5 +15,6 @@ export const store = new Store<StoreSchema>({
     worktreesDir: null,
     repoDefaults: {},
     notificationsEnabled: true,
+    soundEffectsEnabled: true,
   },
 });

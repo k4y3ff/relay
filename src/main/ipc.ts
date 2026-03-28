@@ -171,6 +171,14 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('notificationsEnabled', enabled);
   });
 
+  // settings:get-sound-effects-enabled — return whether sound effects are enabled
+  ipcMain.handle('settings:get-sound-effects-enabled', (): boolean => store.get('soundEffectsEnabled'));
+
+  // settings:set-sound-effects-enabled — persist the sound effects preference
+  ipcMain.handle('settings:set-sound-effects-enabled', (_event, { enabled }: { enabled: boolean }): void => {
+    store.set('soundEffectsEnabled', enabled);
+  });
+
   // taskgroups:add-branch — fetch default branch, create worktree off it, persist
   ipcMain.handle(
     'taskgroups:add-branch',

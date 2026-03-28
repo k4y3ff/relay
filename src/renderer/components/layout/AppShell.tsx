@@ -3,6 +3,8 @@ import ChatPane from './ChatPane';
 import RightColumn from './RightColumn';
 import Sidebar from './Sidebar';
 import SettingsModal from '../SettingsModal';
+import { useRepo } from '../../context/RepoContext';
+import { useSoundEffects } from '../../hooks/useSoundEffects';
 
 const MIN_SIDEBAR = 160;
 const MAX_SIDEBAR = 500;
@@ -13,10 +15,13 @@ export default function AppShell() {
   const [sidebarW, setSidebarW] = useState(260);
   const [rightW, setRightW] = useState(320);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { activeWorktreePath, activePaneTab } = useRepo();
 
   useEffect(() => {
     return window.relay.on('open:settings', () => setSettingsOpen(true));
   }, []);
+
+  useSoundEffects(activeWorktreePath, activePaneTab);
 
   const onLeftDividerMouseDown = useCallback(
     (e: React.MouseEvent) => {

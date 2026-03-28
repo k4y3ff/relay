@@ -7,11 +7,15 @@ interface Props {
 
 export default function SettingsModal({ onClose }: Props) {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState<boolean | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.relay.invoke('settings:get-notifications-enabled').then((val) => {
       setNotificationsEnabled(val as boolean);
+    });
+    window.relay.invoke('settings:get-sound-effects-enabled').then((val) => {
+      setSoundEffectsEnabled(val as boolean);
     });
   }, []);
 
@@ -27,6 +31,12 @@ export default function SettingsModal({ onClose }: Props) {
     const next = !notificationsEnabled;
     setNotificationsEnabled(next);
     window.relay.invoke('settings:set-notifications-enabled', { enabled: next });
+  }
+
+  function handleSoundToggle() {
+    const next = !soundEffectsEnabled;
+    setSoundEffectsEnabled(next);
+    window.relay.invoke('settings:set-sound-effects-enabled', { enabled: next });
   }
 
   function handleOverlayClick(e: React.MouseEvent) {
@@ -61,6 +71,29 @@ export default function SettingsModal({ onClose }: Props) {
             <span
               className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-150 ${
                 notificationsEnabled ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        <p className="text-[11px] font-medium text-[var(--color-mac-muted)] uppercase tracking-wide mt-4 mb-2">
+          Sound
+        </p>
+
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] text-[var(--color-mac-text)]">Play sound when Claude finishes</span>
+          <button
+            role="switch"
+            aria-checked={soundEffectsEnabled ?? false}
+            onClick={handleSoundToggle}
+            disabled={soundEffectsEnabled === null}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 focus:outline-none disabled:opacity-50 ${
+              soundEffectsEnabled ? 'bg-[var(--color-mac-accent)]' : 'bg-[var(--color-mac-surface2)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-150 ${
+                soundEffectsEnabled ? 'translate-x-4' : 'translate-x-0'
               }`}
             />
           </button>
