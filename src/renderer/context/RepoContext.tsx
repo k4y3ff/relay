@@ -109,6 +109,13 @@ export function RepoProvider({ children }: { children: ReactNode }) {
       .catch(() => dispatch({ type: 'SET_LOADING', loading: false }));
   }, []);
 
+  useEffect(() => {
+    return window.relay.on('navigate:worktree', (payload) => {
+      const { worktreePath } = payload as { worktreePath: string };
+      dispatch({ type: 'SELECT_WORKTREE', path: worktreePath });
+    });
+  }, []);
+
   const createTaskGroup = useCallback(async (name: string): Promise<TaskGroup> => {
     const persisted = (await window.relay.invoke('taskgroups:create', { name })) as { id: string; name: string };
     const group: TaskGroup = { id: persisted.id, name: persisted.name, branches: [] };
