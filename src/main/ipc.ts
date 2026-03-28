@@ -2,8 +2,9 @@ import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { store } from './store.js';
-import type { Repo, Worktree, PersistedRepo, ChangedFile } from '../renderer/types/repo.js';
+import type { Worktree, BranchEntry, TaskGroup, PersistedTaskGroup, PersistedBranch, ChangedFile } from '../renderer/types/repo.js';
 import type { TerminalManager } from './terminal.js';
 import type { ShellManager } from './shell.js';
 
@@ -38,115 +39,192 @@ async function getWorktrees(repoRoot: string): Promise<Worktree[]> {
     });
 }
 
-async function getRemoteUrl(repoRoot: string): Promise<string | null> {
+async function getCurrentBranch(worktreePath: string): Promise<string> {
+  const { stdout } = await execFileAsync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], { cwd: worktreePath });
+  const branch = stdout.trim();
+  return branch === 'HEAD' ? '(detached)' : branch;
+}
+
+async function hydrateBranch(persisted: PersistedBranch): Promise<BranchEntry | null> {
   try {
-    const { stdout } = await execFileAsync('git', ['remote', 'get-url', 'origin'], {
-      cwd: repoRoot,
-    });
-    return stdout.trim() || null;
+    const branch = await getCurrentBranch(persisted.worktreePath);
+    return {
+      repoRootPath: persisted.repoRootPath,
+      repoName: path.basename(persisted.repoRootPath),
+      worktree: { path: persisted.worktreePath, branch, isMain: false, isBare: false },
+    };
   } catch {
     return null;
   }
 }
 
-async function assembleRepo(persisted: PersistedRepo): Promise<Repo> {
-  const [worktrees, remote] = await Promise.all([
-    getWorktrees(persisted.rootPath),
-    getRemoteUrl(persisted.rootPath),
-  ]);
+async function assembleTaskGroup(persisted: PersistedTaskGroup): Promise<TaskGroup> {
+  const branchResults = await Promise.all(persisted.branches.map(hydrateBranch));
   return {
     id: persisted.id,
-    rootPath: persisted.rootPath,
-    name: path.basename(persisted.rootPath),
-    remote,
-    worktrees,
+    name: persisted.name,
+    branches: branchResults.filter((b): b is BranchEntry => b !== null),
   };
 }
 
 // ── IPC handlers ───────────────────────────────────────────────────────────
 
 export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManager, shellManager: ShellManager): void {
-  // repos:list — hydrate all repos from store
-  ipcMain.handle('repos:list', async (): Promise<Repo[]> => {
-    const persisted = store.get('repos');
-    const repos = await Promise.all(persisted.map(assembleRepo));
-    return repos;
+  // taskgroups:list — hydrate all task groups from store
+  ipcMain.handle('taskgroups:list', async (): Promise<TaskGroup[]> => {
+    const persisted = store.get('taskGroups');
+    return Promise.all(persisted.map(assembleTaskGroup));
   });
 
-  // repos:add — validate folder, persist, return assembled Repo
-  ipcMain.handle('repos:add', async (_event, { folderPath }: { folderPath: string }): Promise<Repo> => {
-    let rootPath: string;
-    try {
-      const { stdout } = await execFileAsync(
-        'git',
-        ['rev-parse', '--show-toplevel'],
-        { cwd: folderPath }
-      );
-      rootPath = stdout.trim();
-    } catch {
-      throw new Error('NOT_A_GIT_REPO');
-    }
-
-    const existing = store.get('repos');
-    if (existing.some((r) => r.id === rootPath)) {
-      return assembleRepo({ id: rootPath, rootPath });
-    }
-
-    const persisted: PersistedRepo = { id: rootPath, rootPath };
-    store.set('repos', [...existing, persisted]);
-
-    return assembleRepo(persisted);
-  });
-
-  // repos:remove — remove from store only, no filesystem changes
-  ipcMain.handle('repos:remove', (_event, { repoId }: { repoId: string }): void => {
-    const existing = store.get('repos');
-    store.set('repos', existing.filter((r) => r.id !== repoId));
-  });
-
-  // worktrees:add — run git worktree add, return new Worktree
+  // taskgroups:create — create a new empty task group
   ipcMain.handle(
-    'worktrees:add',
-    async (
-      _event,
-      { repoId, branchName, createNew }: { repoId: string; branchName: string; createNew: boolean }
-    ): Promise<Worktree> => {
-      const repos = store.get('repos');
-      const repo = repos.find((r) => r.id === repoId);
-      if (!repo) throw new Error('REPO_NOT_FOUND');
-
-      const repoName = path.basename(repo.rootPath);
-      const safeBranch = branchName.replace(/\//g, '-');
-      const worktreePath = path.join(repo.rootPath, '..', `${repoName}-${safeBranch}`);
-
-      const args = createNew
-        ? ['worktree', 'add', '-b', branchName, worktreePath]
-        : ['worktree', 'add', worktreePath, branchName];
-
-      await execFileAsync('git', args, { cwd: repo.rootPath });
-
-      const worktrees = await getWorktrees(repo.rootPath);
-      const newWt = worktrees.find((wt) => wt.path === worktreePath);
-      if (!newWt) throw new Error('WORKTREE_NOT_FOUND_AFTER_ADD');
-      return newWt;
+    'taskgroups:create',
+    (_event, { name }: { name: string }): PersistedTaskGroup => {
+      const group: PersistedTaskGroup = { id: randomUUID(), name, branches: [] };
+      const existing = store.get('taskGroups');
+      store.set('taskGroups', [...existing, group]);
+      return group;
     }
   );
 
-  // worktrees:remove — run git worktree remove
-  ipcMain.handle(
-    'worktrees:remove',
-    async (_event, { repoId, worktreePath }: { repoId: string; worktreePath: string }): Promise<void> => {
-      const repos = store.get('repos');
-      const repo = repos.find((r) => r.id === repoId);
-      if (!repo) throw new Error('REPO_NOT_FOUND');
+  // taskgroups:remove — remove a task group (no filesystem changes)
+  ipcMain.handle('taskgroups:remove', (_event, { groupId }: { groupId: string }): void => {
+    const existing = store.get('taskGroups');
+    store.set('taskGroups', existing.filter((g) => g.id !== groupId));
+  });
 
+  // taskgroups:rename — rename a task group
+  ipcMain.handle(
+    'taskgroups:rename',
+    (_event, { groupId, name }: { groupId: string; name: string }): void => {
+      const existing = store.get('taskGroups');
+      store.set(
+        'taskGroups',
+        existing.map((g) => (g.id === groupId ? { ...g, name } : g))
+      );
+    }
+  );
+
+  // git:get-repo-info — resolve repo root and look up (or auto-detect) default branch
+  ipcMain.handle(
+    'git:get-repo-info',
+    async (_event, { folderPath }: { folderPath: string }): Promise<{ repoRootPath: string; repoName: string; defaultBranch: string | null }> => {
+      let repoRootPath: string;
       try {
-        await execFileAsync('git', ['worktree', 'remove', worktreePath], { cwd: repo.rootPath });
+        const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], { cwd: folderPath });
+        repoRootPath = stdout.trim();
       } catch {
-        await execFileAsync('git', ['worktree', 'remove', '--force', worktreePath], {
-          cwd: repo.rootPath,
-        });
+        throw new Error('NOT_A_GIT_REPO');
       }
+
+      const repoName = path.basename(repoRootPath);
+      const repoDefaults = store.get('repoDefaults');
+      let defaultBranch: string | null = repoDefaults[repoRootPath] ?? null;
+
+      if (!defaultBranch) {
+        try {
+          const { stdout } = await execFileAsync(
+            'git', ['symbolic-ref', 'refs/remotes/origin/HEAD', '--short'],
+            { cwd: repoRootPath }
+          );
+          defaultBranch = stdout.trim().replace(/^origin\//, '') || null;
+        } catch {
+          // not detectable — user must enter manually
+        }
+      }
+
+      return { repoRootPath, repoName, defaultBranch };
+    }
+  );
+
+  // settings:get-worktrees-dir — return the configured worktrees directory
+  ipcMain.handle('settings:get-worktrees-dir', (): string | null => store.get('worktreesDir'));
+
+  // settings:set-worktrees-dir — persist the worktrees directory
+  ipcMain.handle('settings:set-worktrees-dir', (_event, { dir }: { dir: string }): void => {
+    store.set('worktreesDir', dir);
+  });
+
+  // taskgroups:add-branch — fetch default branch, create worktree off it, persist
+  ipcMain.handle(
+    'taskgroups:add-branch',
+    async (
+      _event,
+      { groupId, folderPath, branchName, defaultBranch }: { groupId: string; folderPath: string; branchName: string; defaultBranch: string }
+    ): Promise<BranchEntry> => {
+      const worktreesDir = store.get('worktreesDir');
+      if (!worktreesDir) throw new Error('WORKTREES_DIR_NOT_SET');
+
+      let repoRootPath: string;
+      try {
+        const { stdout } = await execFileAsync('git', ['rev-parse', '--show-toplevel'], { cwd: folderPath });
+        repoRootPath = stdout.trim();
+      } catch {
+        throw new Error('NOT_A_GIT_REPO');
+      }
+
+      // Save default branch for this repo
+      const repoDefaults = store.get('repoDefaults');
+      store.set('repoDefaults', { ...repoDefaults, [repoRootPath]: defaultBranch });
+
+      const repoName = path.basename(repoRootPath);
+      const worktreePath = path.join(worktreesDir, repoName, branchName);
+
+      // Fetch latest of default branch then create worktree off origin/<defaultBranch>
+      await execFileAsync('git', ['fetch', 'origin', defaultBranch], { cwd: repoRootPath });
+      try {
+        await execFileAsync(
+          'git',
+          ['worktree', 'add', '-b', branchName, worktreePath, `origin/${defaultBranch}`],
+          { cwd: repoRootPath }
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes('already exists')) throw err;
+        // Branch exists — check it out in the new worktree without -b
+        await execFileAsync(
+          'git',
+          ['worktree', 'add', worktreePath, branchName],
+          { cwd: repoRootPath }
+        );
+      }
+
+      const newWt: Worktree = { path: worktreePath, branch: branchName, isMain: false, isBare: false };
+      const persistedBranch: PersistedBranch = { repoRootPath, worktreePath };
+      const existing = store.get('taskGroups');
+      store.set(
+        'taskGroups',
+        existing.map((g) =>
+          g.id === groupId ? { ...g, branches: [...g.branches, persistedBranch] } : g
+        )
+      );
+
+      return { repoRootPath, repoName, worktree: newWt };
+    }
+  );
+
+  // taskgroups:remove-branch — remove worktree from filesystem and from group
+  ipcMain.handle(
+    'taskgroups:remove-branch',
+    async (
+      _event,
+      { groupId, worktreePath, repoRootPath }: { groupId: string; worktreePath: string; repoRootPath: string }
+    ): Promise<void> => {
+      try {
+        await execFileAsync('git', ['worktree', 'remove', worktreePath], { cwd: repoRootPath });
+      } catch {
+        await execFileAsync('git', ['worktree', 'remove', '--force', worktreePath], { cwd: repoRootPath });
+      }
+
+      const existing = store.get('taskGroups');
+      store.set(
+        'taskGroups',
+        existing.map((g) =>
+          g.id === groupId
+            ? { ...g, branches: g.branches.filter((b) => b.worktreePath !== worktreePath) }
+            : g
+        )
+      );
     }
   );
 

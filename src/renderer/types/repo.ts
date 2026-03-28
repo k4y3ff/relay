@@ -5,18 +5,28 @@ export interface Worktree {
   isBare: boolean;
 }
 
-export interface Repo {
-  id: string;         // equals rootPath — stable, unique
-  rootPath: string;   // absolute path to main worktree
-  name: string;       // path.basename(rootPath)
-  remote: string | null;  // e.g. "https://github.com/owner/repo.git"
-  worktrees: Worktree[];
+export interface BranchEntry {
+  repoRootPath: string;  // absolute path to repo root (used for git ops)
+  repoName: string;      // basename of repoRootPath, for display
+  worktree: Worktree;
 }
 
-// Shape stored in electron-store
-export interface PersistedRepo {
+export interface TaskGroup {
   id: string;
-  rootPath: string;
+  name: string;
+  branches: BranchEntry[];
+}
+
+// Shapes stored in electron-store
+export interface PersistedBranch {
+  repoRootPath: string;
+  worktreePath: string;
+}
+
+export interface PersistedTaskGroup {
+  id: string;
+  name: string;
+  branches: PersistedBranch[];
 }
 
 export interface ChangedFile {
