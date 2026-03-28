@@ -2,6 +2,83 @@ import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import { useRepo } from '../../context/RepoContext';
 import type { ChangedFile } from '../../types/repo';
 
+interface TreeNode {
+  name: string;
+  fullPath: string;
+  isDir: boolean;
+  children: TreeNode[];
+}
+
+function buildTree(paths: string[]): TreeNode[] {
+  const root: TreeNode[] = [];
+  for (const filePath of paths) {
+    const parts = filePath.split('/');
+    let nodes = root;
+    for (let i = 0; i < parts.length; i++) {
+      const name = parts[i];
+      const fullPath = parts.slice(0, i + 1).join('/');
+      const isDir = i < parts.length - 1;
+      let node = nodes.find(n => n.name === name);
+      if (!node) {
+        node = { name, fullPath, isDir, children: [] };
+        nodes.push(node);
+      }
+      nodes = node.children;
+    }
+  }
+  return root;
+}
+
+function FileTreeNode({
+  node,
+  depth,
+  expandedDirs,
+  toggleDir,
+}: {
+  node: TreeNode;
+  depth: number;
+  expandedDirs: Set<string>;
+  toggleDir: (path: string) => void;
+}) {
+  const indent = depth * 14 + 10;
+  if (node.isDir) {
+    const expanded = expandedDirs.has(node.fullPath);
+    return (
+      <>
+        <button
+          className="all-files-dir-row"
+          style={{ paddingLeft: indent }}
+          onClick={() => toggleDir(node.fullPath)}
+          title={node.fullPath}
+        >
+          <span className="all-files-chevron">{expanded ? '▼' : '▶'}</span>
+          <span className="all-files-folder-icon">{expanded ? '📂' : '📁'}</span>
+          <span className="changed-files-path">{node.name}</span>
+        </button>
+        {expanded &&
+          node.children.map(child => (
+            <FileTreeNode
+              key={child.fullPath}
+              node={child}
+              depth={depth + 1}
+              expandedDirs={expandedDirs}
+              toggleDir={toggleDir}
+            />
+          ))}
+      </>
+    );
+  }
+  return (
+    <div
+      className="all-files-row"
+      style={{ paddingLeft: indent }}
+      title={node.fullPath}
+    >
+      <span className="changed-files-path">{node.name}</span>
+    </div>
+  );
+}
+
 interface Props {
   style?: CSSProperties;
 }
@@ -27,6 +104,7 @@ export default function ChangedFilesPane({ style }: Props) {
   const [view, setView] = useState<View>('changes');
   const [files, setFiles] = useState<ChangedFile[]>([]);
   const [allFiles, setAllFiles] = useState<string[]>([]);
+  const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -84,6 +162,15 @@ export default function ChangedFilesPane({ style }: Props) {
     };
   }, [fetchFiles]);
 
+  const toggleDir = useCallback((path: string) => {
+    setExpandedDirs(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path);
+      else next.add(path);
+      return next;
+    });
+  }, []);
+
   const handleRefresh = view === 'changes' ? fetchFiles : fetchAllFiles;
 
   return (
@@ -120,10 +207,14 @@ export default function ChangedFilesPane({ style }: Props) {
           allFiles.length === 0 && !loading ? (
             <div className="changed-files-empty">No files found</div>
           ) : (
-            allFiles.map((filePath) => (
-              <div key={filePath} className="all-files-row" title={filePath}>
-                <span className="changed-files-path">{filePath}</span>
-              </div>
+            buildTree(allFiles).map(node => (
+              <FileTreeNode
+                key={node.fullPath}
+                node={node}
+                depth={0}
+                expandedDirs={expandedDirs}
+                toggleDir={toggleDir}
+              />
             ))
           )
         ) : files.length === 0 && !loading ? (
