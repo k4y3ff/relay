@@ -132,8 +132,7 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
       }
 
       const repoName = path.basename(repoRootPath);
-      const safeBranch = branchName.replace(/\//g, '-');
-      const worktreePath = path.join(worktreesDir, `${repoName}-${safeBranch}`);
+      const worktreePath = path.join(worktreesDir, repoName, branchName);
 
       const args = createNew
         ? ['worktree', 'add', '-b', branchName, worktreePath]
