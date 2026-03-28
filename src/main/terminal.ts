@@ -38,8 +38,11 @@ export class TerminalManager {
         s.idleTimer = setTimeout(() => {
           s.idleTimer = null;
           s.pendingResponse = false;
-          if (!this.win.isDestroyed() && !this.win.isFocused()) {
-            this.fireNotification(worktreePath);
+          if (!this.win.isDestroyed()) {
+            this.win.webContents.send('response:complete', { worktreePath });
+            if (!this.win.isFocused()) {
+              this.fireNotification(worktreePath);
+            }
           }
         }, 1500);
       }
