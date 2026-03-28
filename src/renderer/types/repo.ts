@@ -31,7 +31,7 @@ export interface PersistedTaskGroup {
 
 export interface ChangedFile {
   path: string;
-  status: 'M' | 'A' | 'D' | '?';
+  status: 'M' | 'A' | 'D' | '?' | 'R';
   added: number;
   deleted: number;
 }
