@@ -1,9 +1,13 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { EditorState } from '@codemirror/state';
+import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { indentOnInput, syntaxHighlighting, defaultHighlightStyle, bracketMatching } from '@codemirror/language';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { githubDark, githubLight } from '@uiw/codemirror-theme-github';
+import { dracula } from '@uiw/codemirror-theme-dracula';
+import { nord } from '@uiw/codemirror-theme-nord';
+import { solarizedDark, solarizedLight } from '@uiw/codemirror-theme-solarized';
 import { javascript } from '@codemirror/lang-javascript';
 import { css } from '@codemirror/lang-css';
 import { html } from '@codemirror/lang-html';
@@ -22,6 +26,18 @@ import { useRepo } from '../../context/RepoContext';
 interface Props {
   worktreePath: string;
   filePath: string;
+}
+
+function getThemeExtension(themeId: string) {
+  switch (themeId) {
+    case 'github-dark': return githubDark;
+    case 'github-light': return githubLight;
+    case 'dracula': return dracula;
+    case 'nord': return nord;
+    case 'solarized-dark': return solarizedDark;
+    case 'solarized-light': return solarizedLight;
+    default: return oneDark;
+  }
 }
 
 function getLanguageExtension(ext: string) {
@@ -50,10 +66,34 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
   const { dirtyTabs, markTabDirty, markTabClean } = useRepo();
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const themeCompartment = useRef(new Compartment());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBinary, setIsBinary] = useState(false);
+  const [themeId, setThemeId] = useState('one-dark');
   const isDirty = dirtyTabs.has(filePath);
+
+  // Load saved theme on mount
+  useEffect(() => {
+    window.relay.invoke('settings:get-editor-theme').then((val) => {
+      setThemeId(val as string);
+    });
+  }, []);
+
+  // Listen for live theme changes from Settings
+  useEffect(() => {
+    function handleThemeChange(e: Event) {
+      const newThemeId = (e as CustomEvent<string>).detail;
+      setThemeId(newThemeId);
+      if (viewRef.current) {
+        viewRef.current.dispatch({
+          effects: themeCompartment.current.reconfigure(getThemeExtension(newThemeId)),
+        });
+      }
+    }
+    window.addEventListener('settings:editor-theme-changed', handleThemeChange);
+    return () => window.removeEventListener('settings:editor-theme-changed', handleThemeChange);
+  }, []);
 
   const save = useCallback(async () => {
     if (!viewRef.current) return;
@@ -87,7 +127,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
         const langExt = getLanguageExtension(ext);
 
         const extensions = [
-          oneDark,
+          themeCompartment.current.of(getThemeExtension(themeId)),
           history(),
           lineNumbers(),
           highlightActiveLine(),

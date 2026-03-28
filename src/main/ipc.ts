@@ -179,6 +179,14 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('soundEffectsEnabled', enabled);
   });
 
+  // settings:get-editor-theme — return the saved editor theme id
+  ipcMain.handle('settings:get-editor-theme', (): string => store.get('editorTheme'));
+
+  // settings:set-editor-theme — persist the editor theme preference
+  ipcMain.handle('settings:set-editor-theme', (_event, { theme }: { theme: string }): void => {
+    store.set('editorTheme', theme);
+  });
+
   // taskgroups:add-branch — fetch default branch, create worktree off it, persist
   ipcMain.handle(
     'taskgroups:add-branch',
