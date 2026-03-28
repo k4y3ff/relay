@@ -1,7 +1,8 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import ChatPane from './ChatPane';
 import RightColumn from './RightColumn';
 import Sidebar from './Sidebar';
+import SettingsModal from '../SettingsModal';
 
 const MIN_SIDEBAR = 160;
 const MAX_SIDEBAR = 500;
@@ -11,6 +12,11 @@ const MAX_RIGHT = 600;
 export default function AppShell() {
   const [sidebarW, setSidebarW] = useState(260);
   const [rightW, setRightW] = useState(320);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    return window.relay.on('open:settings', () => setSettingsOpen(true));
+  }, []);
 
   const onLeftDividerMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -58,6 +64,7 @@ export default function AppShell() {
         <div className="divider-v resize-handle" onMouseDown={onRightDividerMouseDown} />
         <RightColumn style={{ width: rightW }} />
       </div>
+      {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }

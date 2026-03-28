@@ -102,6 +102,7 @@ export class TerminalManager {
 
   private fireNotification(worktreePath: string): void {
     if (!Notification.isSupported()) return;
+    if (!store.get('notificationsEnabled')) return;
     const labels = this.resolveLabels(worktreePath);
     if (!labels) return;
 
