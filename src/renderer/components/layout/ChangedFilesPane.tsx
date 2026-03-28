@@ -85,10 +85,10 @@ interface Props {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  M: 'var(--color-status-modified, #d97706)',
-  A: 'var(--color-status-added, #16a34a)',
-  D: 'var(--color-status-deleted, #dc2626)',
-  '?': 'var(--color-status-untracked, #6b7280)',
+  M: '#f59e0b',
+  A: '#34d399',
+  D: '#f87171',
+  '?': '#6b7280',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -230,7 +230,18 @@ export default function ChangedFilesPane({ style }: Props) {
             >
               <span
                 className="changed-files-status"
-                style={{ color: STATUS_COLORS[file.status] }}
+                style={{
+                  background: STATUS_COLORS[file.status],
+                  color: '#000',
+                  borderRadius: 3,
+                  padding: '0 4px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  lineHeight: '16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
               >
                 {STATUS_LABELS[file.status]}
               </span>
