@@ -136,13 +136,13 @@ body,
 
 .divider-v {
   width: 1px;
-  background: var(--color-mac-border);
+  background: rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
 }
 
 .divider-h {
   height: 1px;
-  background: var(--color-mac-border);
+  background: rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
 }
 
@@ -159,7 +159,12 @@ body,
   content: '';
   position: absolute;
   inset: 2px 0;
-  background: var(--color-mac-border);
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 100ms ease-out;
+}
+
+.divider-h.resize-handle:hover::after {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* Resize handle: wider hit target, visible 1px line via ::after */
@@ -175,7 +180,12 @@ body,
   content: '';
   position: absolute;
   inset: 0 2px;
-  background: var(--color-mac-border);
+  background: rgba(255, 255, 255, 0.05);
+  transition: background 100ms ease-out;
+}
+
+.divider-v.resize-handle:hover::after {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
