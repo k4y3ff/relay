@@ -97,8 +97,7 @@ export default function TerminalPane({ style }: Props) {
         break;
       }
     };
-    window.relay.on('shell:exit', onExit);
-    return () => window.relay.off('shell:exit', onExit);
+    return window.relay.on('shell:exit', onExit);
   }, [activeWorktreePath, syncState]);
 
   const handleSelectTab = useCallback((tabId: string) => {

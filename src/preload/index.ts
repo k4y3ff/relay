@@ -7,10 +7,9 @@ contextBridge.exposeInMainWorld('relay', {
   },
   invoke: (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args),
   on: (channel: string, listener: (...args: unknown[]) => void) => {
-    ipcRenderer.on(channel, (_event, ...args) => listener(...args));
-  },
-  off: (channel: string, listener: (...args: unknown[]) => void) => {
-    ipcRenderer.removeListener(channel, listener as never);
+    const wrapper = (_event: Electron.IpcRendererEvent, ...args: unknown[]) => listener(...args);
+    ipcRenderer.on(channel, wrapper);
+    return () => ipcRenderer.removeListener(channel, wrapper);
   },
 });
 
@@ -19,8 +18,7 @@ declare global {
     relay: {
       versions: { node: string; electron: string };
       invoke: (channel: string, ...args: unknown[]) => Promise<unknown>;
-      on: (channel: string, listener: (...args: unknown[]) => void) => void;
-      off: (channel: string, listener: (...args: unknown[]) => void) => void;
+      on: (channel: string, listener: (...args: unknown[]) => void) => () => void;
     };
   }
 }

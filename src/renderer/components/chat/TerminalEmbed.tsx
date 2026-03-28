@@ -5,10 +5,13 @@ import '@xterm/xterm/css/xterm.css';
 
 interface Props {
   worktreePath: string;
+  active: boolean;
 }
 
-export default function TerminalEmbed({ worktreePath }: Props) {
+export default function TerminalEmbed({ worktreePath, active }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const termRef = useRef<Terminal | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -20,6 +23,9 @@ export default function TerminalEmbed({ worktreePath }: Props) {
     term.open(container);
     fitAddon.fit();
 
+    termRef.current = term;
+    fitAddonRef.current = fitAddon;
+
     window.relay.invoke('terminal:create', {
       worktreePath,
       cols: term.cols,
@@ -30,7 +36,7 @@ export default function TerminalEmbed({ worktreePath }: Props) {
       const { worktreePath: wp, data } = payload as { worktreePath: string; data: string };
       if (wp === worktreePath) term.write(data);
     };
-    window.relay.on('terminal:data', onData);
+    const offData = window.relay.on('terminal:data', onData);
 
     const onTermData = term.onData((data) => {
       window.relay.invoke('terminal:write', { worktreePath, data });
@@ -60,12 +66,36 @@ export default function TerminalEmbed({ worktreePath }: Props) {
 
     return () => {
       window.removeEventListener('terminal:refit', refit);
-      window.relay.off('terminal:data', onData);
+      offData();
       onTermData.dispose();
       observer.disconnect();
       term.dispose();
+      termRef.current = null;
+      fitAddonRef.current = null;
     };
   }, [worktreePath]);
 
-  return <div ref={containerRef} style={{ width: '100%', height: '100%' }} />;
+  // Refit when becoming visible after being hidden
+  useEffect(() => {
+    if (active) {
+      const container = containerRef.current;
+      if (!container?.offsetWidth || !container?.offsetHeight) return;
+      fitAddonRef.current?.fit();
+      const term = termRef.current;
+      if (term) {
+        window.relay.invoke('terminal:resize', {
+          worktreePath,
+          cols: term.cols,
+          rows: term.rows,
+        });
+      }
+    }
+  }, [active, worktreePath]);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{ display: active ? 'flex' : 'none', width: '100%', height: '100%' }}
+    />
+  );
 }
