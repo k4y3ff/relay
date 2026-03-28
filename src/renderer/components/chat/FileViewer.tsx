@@ -1,3 +1,5 @@
+import hljs from 'highlight.js';
+import 'highlight.js/styles/atom-one-dark.css';
 import { useEffect, useState } from 'react';
 
 interface Props {
@@ -22,6 +24,14 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
       .finally(() => setLoading(false));
   }, [worktreePath, filePath]);
 
+  const highlighted = (() => {
+    if (!content) return null;
+    const ext = filePath.split('.').pop() ?? '';
+    return hljs.getLanguage(ext)
+      ? hljs.highlight(content, { language: ext })
+      : hljs.highlightAuto(content);
+  })();
+
   return (
     <div className="diff-viewer">
       <div className="diff-viewer-header">
@@ -31,7 +41,13 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
         {loading && <div className="diff-loading">Loading…</div>}
         {error && <div className="diff-error">{error}</div>}
         {!loading && !error && (
-          <pre className="file-viewer-content">{content}</pre>
+          <pre className="file-viewer-content">
+            {highlighted ? (
+              <code dangerouslySetInnerHTML={{ __html: highlighted.value }} />
+            ) : (
+              content
+            )}
+          </pre>
         )}
       </div>
     </div>
