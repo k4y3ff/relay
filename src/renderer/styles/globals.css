@@ -70,6 +70,12 @@ body,
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
+/* ── Global transition speed ───────────────────────────────── */
+/* Tailwind's default duration-150 → override to 100ms for snappier macOS feel */
+*, *::before, *::after {
+  transition-timing-function: ease-out;
+}
+
 /* ── App shell ─────────────────────────────────────────────── */
 
 .app-shell {

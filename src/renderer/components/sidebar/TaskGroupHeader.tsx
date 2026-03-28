@@ -51,7 +51,7 @@ export default function TaskGroupHeader({ group, onAddBranch }: TaskGroupHeaderP
     >
       {/* Chevron */}
       <span
-        className="text-[var(--color-mac-muted)] transition-transform duration-150 flex-shrink-0 flex items-center"
+        className="text-[var(--color-mac-muted)] transition-transform duration-100 flex-shrink-0 flex items-center"
         style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
       >
         <ChevronDown size={12} />
