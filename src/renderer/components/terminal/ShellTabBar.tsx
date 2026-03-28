@@ -1,14 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export interface TabState {
   id: string;
   label: string;
-}
-
-interface ContextMenu {
-  tabId: string;
-  x: number;
-  y: number;
 }
 
 interface Props {
@@ -21,38 +15,41 @@ interface Props {
   maxTabs: number;
 }
 
+const MENU_ID = 'shell-tab-context-menu';
+
 export default function ShellTabBar({ tabs, activeTabId, onSelect, onAdd, onRename, onClose, maxTabs }: Props) {
-  const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
-  const [renamingId, setRenamingId] = useState<string | null>(null);
-  const [renameValue, setRenameValue] = useState('');
-  const menuRef = useRef<HTMLDivElement>(null);
+  const contextTabRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!contextMenu) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setContextMenu(null);
+    const unsubscribe = window.relay.on('menu:item-clicked', (data: unknown) => {
+      const { menuId, itemIndex } = data as { menuId: string; itemIndex: number };
+      if (menuId !== MENU_ID) return;
+      const tabId = contextTabRef.current;
+      if (!tabId) return;
+      if (itemIndex === 0) {
+        // Rename: prompt inline (fall back to browser prompt since native rename input isn't trivial)
+        const tab = tabs.find(t => t.id === tabId);
+        const newLabel = window.prompt('Rename tab', tab?.label ?? '');
+        if (newLabel?.trim()) onRename(tabId, newLabel.trim());
+      } else if (itemIndex === 1) {
+        onClose(tabId);
       }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [contextMenu]);
+      contextTabRef.current = null;
+    });
+    return unsubscribe;
+  }, [tabs, onRename, onClose]);
 
   const handleContextMenu = (e: React.MouseEvent, tabId: string) => {
     e.preventDefault();
-    setContextMenu({ tabId, x: e.clientX, y: e.clientY });
-  };
-
-  const startRename = (tabId: string) => {
-    const tab = tabs.find((t) => t.id === tabId);
-    setRenamingId(tabId);
-    setRenameValue(tab?.label ?? '');
-    setContextMenu(null);
-  };
-
-  const commitRename = (tabId: string) => {
-    if (renameValue.trim()) onRename(tabId, renameValue.trim());
-    setRenamingId(null);
+    contextTabRef.current = tabId;
+    const canClose = tabs.length > 1;
+    void window.relay.invoke('menu:show-context-menu', {
+      menuId: MENU_ID,
+      items: [
+        { label: 'Rename' },
+        { label: 'Close', enabled: canClose },
+      ],
+    });
   };
 
   return (
@@ -65,32 +62,15 @@ export default function ShellTabBar({ tabs, activeTabId, onSelect, onAdd, onRena
           onContextMenu={(e) => handleContextMenu(e, tab.id)}
           title={tab.label}
         >
-          {renamingId === tab.id ? (
-            <input
-              className="shell-tab-rename"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onBlur={() => commitRename(tab.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') commitRename(tab.id);
-                if (e.key === 'Escape') setRenamingId(null);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              autoFocus
-            />
-          ) : (
-            <>
-              <span className="shell-tab-label">{tab.label}</span>
-              <button
-                className="shell-tab-close"
-                onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
-                disabled={tabs.length <= 1}
-                title="Close tab"
-              >
-                ×
-              </button>
-            </>
-          )}
+          <span className="shell-tab-label">{tab.label}</span>
+          <button
+            className="shell-tab-close"
+            onClick={(e) => { e.stopPropagation(); onClose(tab.id); }}
+            disabled={tabs.length <= 1}
+            title="Close tab"
+          >
+            ×
+          </button>
         </button>
       ))}
       <button
@@ -101,24 +81,6 @@ export default function ShellTabBar({ tabs, activeTabId, onSelect, onAdd, onRena
       >
         +
       </button>
-      {contextMenu && (
-        <div
-          ref={menuRef}
-          className="shell-context-menu"
-          style={{ top: contextMenu.y, left: contextMenu.x }}
-        >
-          <button onClick={() => startRename(contextMenu.tabId)}>Rename</button>
-          <button
-            onClick={() => {
-              onClose(contextMenu.tabId);
-              setContextMenu(null);
-            }}
-            disabled={tabs.length <= 1}
-          >
-            Close
-          </button>
-        </div>
-      )}
     </div>
   );
 }

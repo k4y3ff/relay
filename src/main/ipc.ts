@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, BrowserWindow } from 'electron';
+import { ipcMain, dialog, shell, BrowserWindow, Menu, MenuItem } from 'electron';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -243,6 +243,36 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
             : g
         )
       );
+    }
+  );
+
+  // menu:show-context-menu — show a native macOS context menu
+  ipcMain.handle(
+    'menu:show-context-menu',
+    (
+      event,
+      { menuId, items }: { menuId: string; items: { label: string; enabled?: boolean; separator?: boolean }[] }
+    ): void => {
+      const menu = new Menu();
+      items.forEach((item, index) => {
+        if (item.separator) {
+          menu.append(new MenuItem({ type: 'separator' }));
+        } else {
+          menu.append(
+            new MenuItem({
+              label: item.label,
+              enabled: item.enabled !== false,
+              click: () => {
+                const senderWindow = BrowserWindow.fromWebContents(event.sender);
+                if (senderWindow) {
+                  event.sender.send('menu:item-clicked', { menuId, itemIndex: index });
+                }
+              },
+            })
+          );
+        }
+      });
+      menu.popup({ window: BrowserWindow.fromWebContents(event.sender) ?? undefined });
     }
   );
 

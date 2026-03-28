@@ -687,39 +687,6 @@ body,
   position: relative;
 }
 
-.shell-context-menu {
-  position: fixed;
-  background: var(--color-mac-surface2);
-  border: 1px solid var(--color-mac-border);
-  border-radius: 6px;
-  padding: 4px;
-  z-index: 1000;
-  min-width: 120px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.shell-context-menu button {
-  display: block;
-  width: 100%;
-  padding: 6px 10px;
-  background: none;
-  border: none;
-  color: var(--color-mac-text);
-  cursor: pointer;
-  font-size: 12px;
-  text-align: left;
-  border-radius: 4px;
-  -webkit-app-region: no-drag;
-}
-
-.shell-context-menu button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.shell-context-menu button:disabled {
-  color: var(--color-mac-muted);
-  cursor: default;
-}
 
 /* ── Placeholder pane styles ───────────────────────────────── */
 
