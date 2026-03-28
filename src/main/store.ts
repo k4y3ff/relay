@@ -5,6 +5,7 @@ interface StoreSchema {
   taskGroups: PersistedTaskGroup[];
   worktreesDir: string | null;
   repoDefaults: Record<string, string>;
+  notificationsEnabled: boolean;
 }
 
 export const store = new Store<StoreSchema>({
@@ -12,5 +13,6 @@ export const store = new Store<StoreSchema>({
     taskGroups: [],
     worktreesDir: null,
     repoDefaults: {},
+    notificationsEnabled: true,
   },
 });

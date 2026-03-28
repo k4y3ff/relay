@@ -163,6 +163,14 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('worktreesDir', dir);
   });
 
+  // settings:get-notifications-enabled — return whether notifications are enabled
+  ipcMain.handle('settings:get-notifications-enabled', (): boolean => store.get('notificationsEnabled'));
+
+  // settings:set-notifications-enabled — persist the notifications preference
+  ipcMain.handle('settings:set-notifications-enabled', (_event, { enabled }: { enabled: boolean }): void => {
+    store.set('notificationsEnabled', enabled);
+  });
+
   // taskgroups:add-branch — fetch default branch, create worktree off it, persist
   ipcMain.handle(
     'taskgroups:add-branch',
