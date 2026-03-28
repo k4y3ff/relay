@@ -1,10 +1,10 @@
-import { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import ChangedFilesPane from './ChangedFilesPane';
 import TerminalPane from './TerminalPane';
 
 const MIN_PANE_HEIGHT = 80;
 
-export default function RightColumn() {
+export default function RightColumn({ style }: { style?: React.CSSProperties }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [topRatio, setTopRatio] = useState(0.5);
 
@@ -38,7 +38,7 @@ export default function RightColumn() {
   );
 
   return (
-    <div ref={containerRef} className="right-column">
+    <div ref={containerRef} className="right-column" style={style}>
       <ChangedFilesPane style={{ flex: `0 0 ${topRatio * 100}%` }} />
       <div className="divider-h resize-handle" onMouseDown={onDividerMouseDown} />
       <TerminalPane style={{ flex: 1 }} />

@@ -65,7 +65,6 @@ body,
    (setVibrancy('sidebar')) bleeds through from behind the web layer.
    backdrop-filter does NOT work for this — it must be the native view. */
 .sidebar {
-  width: 260px;
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -85,7 +84,6 @@ body,
 /* ── Right column ──────────────────────────────────────────── */
 
 .right-column {
-  width: 320px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -120,6 +118,22 @@ body,
   content: '';
   position: absolute;
   inset: 2px 0;
+  background: var(--color-mac-border);
+}
+
+/* Resize handle: wider hit target, visible 1px line via ::after */
+.divider-v.resize-handle {
+  width: 5px;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.divider-v.resize-handle::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
   background: var(--color-mac-border);
 }
 
