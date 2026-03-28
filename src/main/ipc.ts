@@ -87,9 +87,27 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
-  // taskgroups:remove — remove a task group (no filesystem changes)
-  ipcMain.handle('taskgroups:remove', (_event, { groupId }: { groupId: string }): void => {
+  // taskgroups:remove — remove a task group and delete all associated worktrees from filesystem
+  ipcMain.handle('taskgroups:remove', async (_event, { groupId }: { groupId: string }): Promise<void> => {
     const existing = store.get('taskGroups');
+    const group = existing.find((g) => g.id === groupId);
+
+    if (group) {
+      for (const branch of group.branches) {
+        try {
+          await execFileAsync('git', ['worktree', 'remove', branch.worktreePath], { cwd: branch.repoRootPath });
+        } catch {
+          try {
+            await execFileAsync('git', ['worktree', 'remove', '--force', branch.worktreePath], {
+              cwd: branch.repoRootPath,
+            });
+          } catch {
+            // ignore: worktree may already be gone
+          }
+        }
+      }
+    }
+
     store.set('taskGroups', existing.filter((g) => g.id !== groupId));
   });
 
