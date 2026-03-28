@@ -172,11 +172,22 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
 
       // Fetch latest of default branch then create worktree off origin/<defaultBranch>
       await execFileAsync('git', ['fetch', 'origin', defaultBranch], { cwd: repoRootPath });
-      await execFileAsync(
-        'git',
-        ['worktree', 'add', '-b', branchName, worktreePath, `origin/${defaultBranch}`],
-        { cwd: repoRootPath }
-      );
+      try {
+        await execFileAsync(
+          'git',
+          ['worktree', 'add', '-b', branchName, worktreePath, `origin/${defaultBranch}`],
+          { cwd: repoRootPath }
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes('already exists')) throw err;
+        // Branch exists — check it out in the new worktree without -b
+        await execFileAsync(
+          'git',
+          ['worktree', 'add', worktreePath, branchName],
+          { cwd: repoRootPath }
+        );
+      }
 
       const newWt: Worktree = { path: worktreePath, branch: branchName, isMain: false, isBare: false };
       const persistedBranch: PersistedBranch = { repoRootPath, worktreePath };
