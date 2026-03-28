@@ -17,8 +17,14 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
   return (
     <div>
       <TaskGroupHeader group={group} onAddBranch={() => setAddingBranch(true)} />
-      {!isCollapsed &&
-        group.branches.map((branch) => (
+      <div
+        style={{
+          overflow: 'hidden',
+          maxHeight: isCollapsed ? 0 : group.branches.length * 28 + 4,
+          transition: 'max-height 150ms ease-out',
+        }}
+      >
+        {group.branches.map((branch) => (
           <WorktreeRow
             key={branch.worktree.path}
             groupId={group.id}
@@ -27,6 +33,7 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
             worktree={branch.worktree}
           />
         ))}
+      </div>
       {addingBranch && (
         <AddBranchModal groupId={group.id} onClose={() => setAddingBranch(false)} />
       )}

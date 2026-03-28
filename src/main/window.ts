@@ -25,8 +25,8 @@ export function createMainWindow(): BrowserWindow {
     },
   });
 
-  // Apply macOS sidebar vibrancy material
-  win.setVibrancy('sidebar');
+  // Apply macOS vibrancy to the full window background
+  win.setVibrancy('under-window-background');
 
   // electron-vite sets ELECTRON_RENDERER_URL in dev mode
   const devServerUrl = process.env['ELECTRON_RENDERER_URL'];

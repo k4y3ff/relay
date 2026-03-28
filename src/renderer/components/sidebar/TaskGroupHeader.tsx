@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 import type { TaskGroup } from '../../types/repo';
 import { useRepo } from '../../context/RepoContext';
 import OverflowMenu from './OverflowMenu';
@@ -44,15 +45,16 @@ export default function TaskGroupHeader({ group, onAddBranch }: TaskGroupHeaderP
 
   return (
     <div
-      className="group flex items-center gap-1.5 px-3 py-2 cursor-pointer select-none hover:bg-[var(--color-mac-surface2)] text-[var(--color-mac-text)]"
+      className="group flex items-center gap-1.5 px-3 cursor-pointer select-none hover:bg-[var(--color-mac-surface2)] text-[var(--color-mac-muted)]"
+      style={{ height: 26, minHeight: 26 }}
       onClick={() => { if (!renaming) toggleGroupCollapsed(group.id); }}
     >
       {/* Chevron */}
       <span
-        className="text-[var(--color-mac-muted)] text-[10px] transition-transform duration-150 flex-shrink-0"
-        style={{ display: 'inline-block', transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+        className="text-[var(--color-mac-muted)] transition-transform duration-100 flex-shrink-0 flex items-center"
+        style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
       >
-        ▾
+        <ChevronDown size={12} />
       </span>
 
       {/* Name or rename input */}
@@ -69,7 +71,7 @@ export default function TaskGroupHeader({ group, onAddBranch }: TaskGroupHeaderP
           style={{ userSelect: 'text' }}
         />
       ) : (
-        <span className="flex-1 truncate text-[13px] font-medium">{group.name}</span>
+        <span className="flex-1 truncate text-[11px] font-semibold uppercase tracking-widest">{group.name}</span>
       )}
 
       {/* Overflow menu */}

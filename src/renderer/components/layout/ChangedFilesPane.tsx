@@ -1,4 +1,5 @@
 import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react';
 import { useRepo } from '../../context/RepoContext';
 import type { ChangedFile } from '../../types/repo';
 
@@ -51,8 +52,8 @@ function FileTreeNode({
           onClick={() => toggleDir(node.fullPath)}
           title={node.fullPath}
         >
-          <span className="all-files-chevron">{expanded ? '▼' : '▶'}</span>
-          <span className="all-files-folder-icon">{expanded ? '📂' : '📁'}</span>
+          <span className="all-files-chevron">{expanded ? <ChevronDown size={9} /> : <ChevronRight size={9} />}</span>
+          <span className="all-files-folder-icon">{expanded ? <FolderOpen size={12} /> : <Folder size={12} />}</span>
           <span className="changed-files-path">{node.name}</span>
         </button>
         {expanded &&
@@ -84,10 +85,10 @@ interface Props {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  M: 'var(--color-status-modified, #d97706)',
-  A: 'var(--color-status-added, #16a34a)',
-  D: 'var(--color-status-deleted, #dc2626)',
-  '?': 'var(--color-status-untracked, #6b7280)',
+  M: '#f59e0b',
+  A: '#34d399',
+  D: '#f87171',
+  '?': '#6b7280',
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -229,7 +230,18 @@ export default function ChangedFilesPane({ style }: Props) {
             >
               <span
                 className="changed-files-status"
-                style={{ color: STATUS_COLORS[file.status] }}
+                style={{
+                  background: STATUS_COLORS[file.status],
+                  color: '#000',
+                  borderRadius: 3,
+                  padding: '0 4px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.02em',
+                  lineHeight: '16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
               >
                 {STATUS_LABELS[file.status]}
               </span>

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 export interface MenuItem {
   label: string;
@@ -11,67 +10,38 @@ interface OverflowMenuProps {
   items: MenuItem[];
 }
 
+let menuCounter = 0;
+
 export default function OverflowMenu({ items }: OverflowMenuProps) {
-  const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuIdRef = useRef(`overflow-menu-${++menuCounter}`);
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const menuId = menuIdRef.current;
+    const unsubscribe = window.relay.on('menu:item-clicked', (data: unknown) => {
+      const { menuId: id, itemIndex } = data as { menuId: string; itemIndex: number };
+      if (id !== menuId) return;
+      items[itemIndex]?.action();
+    });
+    return unsubscribe;
+  }, [items]);
 
   function handleTrigger(e: React.MouseEvent) {
     e.stopPropagation();
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    const rect = btnRef.current!.getBoundingClientRect();
-    setPos({ x: rect.left, y: rect.bottom + 4 });
-    setOpen(true);
+    const nativeItems = items.map((item) => ({ label: item.label }));
+    void window.relay.invoke('menu:show-context-menu', { menuId: menuIdRef.current, items: nativeItems });
+    forceUpdate(n => n + 1); // ensure re-render if needed
   }
 
-  useEffect(() => {
-    if (!open) return;
-    function onClickOutside() {
-      setOpen(false);
-    }
-    document.addEventListener('click', onClickOutside);
-    return () => document.removeEventListener('click', onClickOutside);
-  }, [open]);
-
   return (
-    <>
-      <button
-        ref={btnRef}
-        onClick={handleTrigger}
-        className="overflow-menu-btn opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 rounded text-[var(--color-mac-muted)] hover:text-[var(--color-mac-text)] hover:bg-[var(--color-mac-surface2)] transition-opacity text-xs -webkit-app-region-no-drag"
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        tabIndex={-1}
-        aria-label="More options"
-      >
-        ⋯
-      </button>
-      {open &&
-        createPortal(
-          <div
-            className="fixed z-50 min-w-[160px] rounded-md overflow-hidden shadow-xl border border-[var(--color-mac-border)] bg-[#2a2a2a] py-1"
-            style={{ left: pos.x, top: pos.y }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {items.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => {
-                  setOpen(false);
-                  item.action();
-                }}
-                className={`w-full text-left px-3 py-1.5 text-[13px] hover:bg-[var(--color-mac-surface2)] transition-colors ${
-                  item.danger ? 'text-red-400' : 'text-[var(--color-mac-text)]'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>,
-          document.body
-        )}
-    </>
+    <button
+      onClick={handleTrigger}
+      className="overflow-menu-btn opacity-0 group-hover:opacity-100 flex items-center justify-center w-5 h-5 rounded text-[var(--color-mac-muted)] hover:text-[var(--color-mac-text)] hover:bg-[var(--color-mac-surface2)] transition-opacity text-xs"
+      style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+      tabIndex={-1}
+      aria-label="More options"
+    >
+      ⋯
+    </button>
   );
 }

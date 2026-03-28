@@ -56,7 +56,8 @@ export default function WorktreeRow({ groupId, repoName, repoRootPath, worktree 
     <div
       title={worktree.path}
       onClick={() => selectWorktree(worktree.path)}
-      className={`group flex items-center justify-between px-3 py-1.5 cursor-pointer text-[13px] select-none ${
+      style={{ height: 28, minHeight: 28 }}
+      className={`group flex items-center justify-between px-3 cursor-pointer text-[13px] select-none ${
         isActive
           ? 'worktree-row-active text-[var(--color-mac-text)]'
           : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'
