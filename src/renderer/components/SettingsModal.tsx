@@ -19,6 +19,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState<boolean | null>(null);
   const [editorTheme, setEditorTheme] = useState<string | null>(null);
+  const [editorWordWrap, setEditorWordWrap] = useState<boolean | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,6 +31,9 @@ export default function SettingsModal({ onClose }: Props) {
     });
     window.relay.invoke('settings:get-editor-theme').then((val) => {
       setEditorTheme(val as string);
+    });
+    window.relay.invoke('settings:get-editor-word-wrap').then((val) => {
+      setEditorWordWrap(val as boolean);
     });
   }, []);
 
@@ -51,6 +55,13 @@ export default function SettingsModal({ onClose }: Props) {
     const next = !soundEffectsEnabled;
     setSoundEffectsEnabled(next);
     window.relay.invoke('settings:set-sound-effects-enabled', { enabled: next });
+  }
+
+  function handleWordWrapToggle() {
+    const next = !editorWordWrap;
+    setEditorWordWrap(next);
+    window.relay.invoke('settings:set-editor-word-wrap', { enabled: next });
+    window.dispatchEvent(new CustomEvent('settings:editor-word-wrap-changed', { detail: next }));
   }
 
   function handleThemeChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -136,6 +147,25 @@ export default function SettingsModal({ onClose }: Props) {
               <option key={t.id} value={t.id}>{t.label}</option>
             ))}
           </select>
+        </div>
+
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-[13px] text-[var(--color-mac-text)]">Word wrap</span>
+          <button
+            role="switch"
+            aria-checked={editorWordWrap ?? false}
+            onClick={handleWordWrapToggle}
+            disabled={editorWordWrap === null}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 focus:outline-none disabled:opacity-50 ${
+              editorWordWrap ? 'bg-[var(--color-mac-accent)]' : 'bg-[var(--color-mac-surface2)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-150 ${
+                editorWordWrap ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
 
         <div className="flex justify-end mt-5">

@@ -187,6 +187,14 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('editorTheme', theme);
   });
 
+  // settings:get-editor-word-wrap — return the saved word wrap preference
+  ipcMain.handle('settings:get-editor-word-wrap', (): boolean => store.get('editorWordWrap'));
+
+  // settings:set-editor-word-wrap — persist the word wrap preference
+  ipcMain.handle('settings:set-editor-word-wrap', (_event, { enabled }: { enabled: boolean }): void => {
+    store.set('editorWordWrap', enabled);
+  });
+
   // taskgroups:add-branch — fetch default branch, create worktree off it, persist
   ipcMain.handle(
     'taskgroups:add-branch',

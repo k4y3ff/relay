@@ -67,16 +67,21 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const themeCompartment = useRef(new Compartment());
+  const wrapCompartment = useRef(new Compartment());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBinary, setIsBinary] = useState(false);
   const [themeId, setThemeId] = useState('one-dark');
+  const [wordWrap, setWordWrap] = useState(false);
   const isDirty = dirtyTabs.has(filePath);
 
-  // Load saved theme on mount
+  // Load saved settings on mount
   useEffect(() => {
     window.relay.invoke('settings:get-editor-theme').then((val) => {
       setThemeId(val as string);
+    });
+    window.relay.invoke('settings:get-editor-word-wrap').then((val) => {
+      setWordWrap(val as boolean);
     });
   }, []);
 
@@ -93,6 +98,21 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
     }
     window.addEventListener('settings:editor-theme-changed', handleThemeChange);
     return () => window.removeEventListener('settings:editor-theme-changed', handleThemeChange);
+  }, []);
+
+  // Listen for live word wrap changes from Settings
+  useEffect(() => {
+    function handleWrapChange(e: Event) {
+      const enabled = (e as CustomEvent<boolean>).detail;
+      setWordWrap(enabled);
+      if (viewRef.current) {
+        viewRef.current.dispatch({
+          effects: wrapCompartment.current.reconfigure(enabled ? EditorView.lineWrapping : []),
+        });
+      }
+    }
+    window.addEventListener('settings:editor-word-wrap-changed', handleWrapChange);
+    return () => window.removeEventListener('settings:editor-word-wrap-changed', handleWrapChange);
   }, []);
 
   const save = useCallback(async () => {
@@ -128,6 +148,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
 
         const extensions = [
           themeCompartment.current.of(getThemeExtension(themeId)),
+          wrapCompartment.current.of(wordWrap ? EditorView.lineWrapping : []),
           history(),
           lineNumbers(),
           highlightActiveLine(),
@@ -143,7 +164,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
             if (update.docChanged) markTabDirty(filePath);
           }),
           EditorView.theme({
-            '&': { height: '100%' },
+            '&': { height: '100%', width: '100%' },
             '.cm-scroller': { overflow: 'auto' },
           }),
         ];
@@ -187,7 +208,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
         {isBinary && <div className="diff-loading">Binary file — cannot edit</div>}
         <div
           ref={editorRef}
-          style={{ display: loading || error || isBinary ? 'none' : 'flex', flex: 1, minHeight: 0 }}
+          style={{ display: loading || error || isBinary ? 'none' : 'block', flex: 1, minHeight: 0, overflow: 'hidden' }}
         />
       </div>
     </div>
