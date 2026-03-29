@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
@@ -35,18 +35,11 @@ export default function ManualTaskNotesPane({ groupId, task }: ManualTaskNotesPa
   const viewRef = useRef<EditorView | null>(null);
   const themeCompartment = useRef(new Compartment());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [themeId, setThemeId] = useState('one-dark');
-
-  // Load theme setting on mount
-  useEffect(() => {
-    window.relay.invoke('settings:get-editor-theme').then((val) => setThemeId(val as string));
-  }, []);
 
   // Listen for live theme changes
   useEffect(() => {
     function handleThemeChange(e: Event) {
       const newThemeId = (e as CustomEvent<string>).detail;
-      setThemeId(newThemeId);
       if (viewRef.current) {
         viewRef.current.dispatch({
           effects: themeCompartment.current.reconfigure(getThemeExtension(newThemeId)),
@@ -57,9 +50,10 @@ export default function ManualTaskNotesPane({ groupId, task }: ManualTaskNotesPa
     return () => window.removeEventListener('settings:editor-theme-changed', handleThemeChange);
   }, []);
 
-  // Create/recreate editor when task changes
+  // Create/recreate editor when task changes, fetching the current theme first
   useEffect(() => {
     if (!editorRef.current) return;
+    let stale = false;
 
     const saveNotes = (notes: string) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -68,36 +62,43 @@ export default function ManualTaskNotesPane({ groupId, task }: ManualTaskNotesPa
       }, 500);
     };
 
-    const state = EditorState.create({
-      doc: task.notes ?? '',
-      extensions: [
-        themeCompartment.current.of(getThemeExtension(themeId)),
-        history(),
-        syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-        markdown(),
-        EditorView.lineWrapping,
-        keymap.of([...defaultKeymap, ...historyKeymap]),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) saveNotes(update.state.doc.toString());
-        }),
-        EditorView.theme({
-          '&': { height: '100%', width: '100%' },
-          '.cm-scroller': { overflow: 'auto' },
-          '.cm-content': { padding: '12px 16px' },
-          '.cm-line': { padding: '0' },
-        }),
-      ],
+    window.relay.invoke('settings:get-editor-theme').then((val) => {
+      if (stale || !editorRef.current) return;
+      const themeId = val as string;
+
+      const state = EditorState.create({
+        doc: task.notes ?? '',
+        extensions: [
+          themeCompartment.current.of(getThemeExtension(themeId)),
+          history(),
+          syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+          markdown(),
+          EditorView.lineWrapping,
+          keymap.of([...defaultKeymap, ...historyKeymap]),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) saveNotes(update.state.doc.toString());
+          }),
+          EditorView.theme({
+            '&': { height: '100%', width: '100%' },
+            '.cm-scroller': { overflow: 'auto' },
+            '.cm-content': { padding: '12px 16px' },
+            '.cm-line': { padding: '0' },
+          }),
+        ],
+      });
+
+      const view = new EditorView({ state, parent: editorRef.current });
+      viewRef.current = view;
     });
 
-    const view = new EditorView({ state, parent: editorRef.current });
-    viewRef.current = view;
-
     return () => {
+      stale = true;
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      view.destroy();
-      viewRef.current = null;
+      if (viewRef.current) {
+        viewRef.current.destroy();
+        viewRef.current = null;
+      }
     };
-    // themeId intentionally excluded — theme changes handled via Compartment reconfigure
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task.id, groupId]);
 
