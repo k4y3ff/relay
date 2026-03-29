@@ -9,6 +9,7 @@ interface StoreSchema {
   repoDefaults: Record<string, string>;
   notificationsEnabled: boolean;
   soundEffectsEnabled: boolean;
+  customSoundPath: string | null;
   appTheme: string;
   editorTheme: string;
   editorWordWrap: boolean;
@@ -21,6 +22,7 @@ export const store = new Store<StoreSchema>({
     repoDefaults: {},
     notificationsEnabled: true,
     soundEffectsEnabled: true,
+    customSoundPath: null,
     appTheme: 'dark',
     editorTheme: 'one-dark',
     editorWordWrap: false,
