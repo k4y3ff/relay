@@ -95,9 +95,10 @@ export default function DiffViewer({ worktreePath, filePath, status, added, dele
 
   const handleAddToChat = useCallback(() => {
     if (!selectedText || !toolbarTargetTabId) return;
-    void window.relay.invoke('terminal:write', { terminalId: toolbarTargetTabId, data: selectedText });
+    const message = `The ${filePath} file says:\n${selectedText}\n\n`;
+    void window.relay.invoke('terminal:write', { terminalId: toolbarTargetTabId, data: message });
     setSelectedText('');
-  }, [selectedText, toolbarTargetTabId]);
+  }, [selectedText, toolbarTargetTabId, filePath]);
 
   return (
     <div className="diff-viewer">
