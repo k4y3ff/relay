@@ -786,7 +786,7 @@ body,
   background: var(--color-mac-accent);
   border: none;
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-accent-text);
   font-size: 12px;
   padding: 3px 10px;
   cursor: pointer;
@@ -821,7 +821,7 @@ body,
   background: var(--color-mac-accent);
   border: none;
   border-radius: 4px;
-  color: #fff;
+  color: var(--color-accent-text);
   font-size: 12px;
   cursor: pointer;
   -webkit-app-region: no-drag;

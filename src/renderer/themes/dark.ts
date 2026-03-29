@@ -16,6 +16,7 @@ export const darkTheme: AppTheme = {
 
     // Accent
     accent: '#0a84ff',
+    accentText: '#ffffff',
     accentHover: '#2196ff',
     accentRowActive: 'rgba(0, 122, 255, 0.25)',
     accentOverlay: 'rgba(10, 132, 255, 0.12)',

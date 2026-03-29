@@ -18,6 +18,7 @@ export const pinkTheme: AppTheme = {
 
     // Accent — very light pink so it pops against the vivid bg
     accent: '#ffe0f2',
+    accentText: '#7c3256',   // dark pink for readable contrast on light accent bg
     accentHover: '#fff0f8',
     accentRowActive: 'rgba(255, 224, 242, 0.22)',
     accentOverlay: 'rgba(255, 224, 242, 0.12)',

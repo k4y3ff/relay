@@ -26,6 +26,7 @@ function deriveThemeVars(colors: AppThemeColors, colorScheme: 'dark' | 'light'):
     '--color-text': colors.text,
     '--color-text-secondary': colors.textSecondary,
     '--color-accent': colors.accent,
+    '--color-accent-text': colors.accentText,
     '--color-accent-hover': colors.accentHover,
     '--color-accent-row-active': colors.accentRowActive,
     '--color-accent-overlay': colors.accentOverlay,
@@ -74,6 +75,7 @@ function deriveThemeVars(colors: AppThemeColors, colorScheme: 'dark' | 'light'):
     '--color-mac-text': colors.text,
     '--color-mac-muted': colors.textSecondary,
     '--color-mac-accent': colors.accent,
+    '--color-mac-accent-text': colors.accentText,
     '--color-mac-text-secondary': colors.textSecondary,
   };
 }
