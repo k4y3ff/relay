@@ -11,6 +11,7 @@ import { nord } from '@uiw/codemirror-theme-nord';
 import { solarizedDark, solarizedLight } from '@uiw/codemirror-theme-solarized';
 import type { ManualTask } from '../../types/repo';
 import { useRepo } from '../../context/RepoContext';
+import { spawnSparkles } from '../../lib/sparkles';
 
 interface ManualTaskNotesPaneProps {
   groupId: string;
@@ -76,7 +77,11 @@ export default function ManualTaskNotesPane({ groupId, task }: ManualTaskNotesPa
           EditorView.lineWrapping,
           keymap.of([...defaultKeymap, ...historyKeymap]),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) saveNotes(update.state.doc.toString());
+            if (!update.docChanged) return;
+            saveNotes(update.state.doc.toString());
+            const head = update.state.selection.main.head;
+            const coords = update.view.coordsAtPos(head);
+            if (coords) spawnSparkles(coords.left, coords.bottom);
           }),
           EditorView.theme({
             '&': { height: '100%', width: '100%' },
