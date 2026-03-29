@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Filter } from 'lucide-react';
+import { Filter, Plus } from 'lucide-react';
 import { useRepo } from '../../context/RepoContext';
 import TaskGroupSection from '../sidebar/TaskGroupSection';
 import TaskRow from '../sidebar/TaskRow';
@@ -106,6 +106,14 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
         >
           <Filter size={13} />
         </button>
+        <button
+          onClick={() => setIsCreating(true)}
+          disabled={isCreating}
+          className="flex items-center justify-center w-5 h-5 rounded transition-colors text-[var(--color-mac-muted)] hover:text-[var(--color-mac-text)] disabled:opacity-50"
+          aria-label="Add task group"
+        >
+          <Plus size={14} />
+        </button>
 
         {filterMenuOpen && (
           <SidebarFilterMenu
@@ -181,16 +189,6 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
         )}
       </div>
 
-      {/* Add task group button */}
-      <div className="flex-shrink-0 border-t border-[var(--color-mac-border)] p-3">
-        <button
-          onClick={() => setIsCreating(true)}
-          disabled={isCreating}
-          className="w-full text-center text-[13px] text-[var(--color-mac-muted)] hover:text-[var(--color-mac-text)] px-2 py-1.5 rounded hover:bg-[var(--color-mac-surface2)] transition-colors disabled:opacity-50"
-        >
-          + Task group
-        </button>
-      </div>
     </div>
   );
 }
