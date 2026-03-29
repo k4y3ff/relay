@@ -257,6 +257,9 @@ export default function ChatPane() {
           status={activeDiffFile.status}
           added={activeDiffFile.added}
           deleted={activeDiffFile.deleted}
+          chatTabs={activeChatTabs}
+          activeChatTabId={activeChatTabId}
+          chatTabLabels={chatTabLabels}
         />
       )}
     </div>
