@@ -12,6 +12,7 @@ interface TaskGroupState {
   collapsedGroups: Set<string>;
   dirtyTabs: Set<string>;
   runningWorktreePaths: Set<string>;
+  pendingReviewPaths: Set<string>;
   loading: boolean;
 }
 
@@ -140,8 +141,11 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
         };
       }
     }
-    case 'SELECT_WORKTREE':
-      return { ...state, activeWorktreePath: action.path, activeManualTaskId: null, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
+    case 'SELECT_WORKTREE': {
+      const pendingReview = new Set(state.pendingReviewPaths);
+      if (action.path) pendingReview.delete(action.path);
+      return { ...state, activeWorktreePath: action.path, activeManualTaskId: null, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set(), pendingReviewPaths: pendingReview };
+    }
     case 'SELECT_MANUAL_TASK':
       return { ...state, activeManualTaskId: action.taskId, activeWorktreePath: null, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
     case 'UPDATE_TASK_NOTES':
@@ -193,14 +197,18 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
     case 'SET_LOADING':
       return { ...state, loading: action.loading };
     case 'CLAUDE_RUNNING': {
-      const next = new Set(state.runningWorktreePaths);
-      next.add(action.worktreePath);
-      return { ...state, runningWorktreePaths: next };
+      const running = new Set(state.runningWorktreePaths);
+      running.add(action.worktreePath);
+      const pendingReview = new Set(state.pendingReviewPaths);
+      pendingReview.delete(action.worktreePath);
+      return { ...state, runningWorktreePaths: running, pendingReviewPaths: pendingReview };
     }
     case 'CLAUDE_DONE': {
-      const next = new Set(state.runningWorktreePaths);
-      next.delete(action.worktreePath);
-      return { ...state, runningWorktreePaths: next };
+      const running = new Set(state.runningWorktreePaths);
+      running.delete(action.worktreePath);
+      const pendingReview = new Set(state.pendingReviewPaths);
+      pendingReview.add(action.worktreePath);
+      return { ...state, runningWorktreePaths: running, pendingReviewPaths: pendingReview };
     }
     default:
       return state;
@@ -216,6 +224,7 @@ const initialState: TaskGroupState = {
   collapsedGroups: new Set(),
   dirtyTabs: new Set(),
   runningWorktreePaths: new Set(),
+  pendingReviewPaths: new Set(),
   loading: true,
 };
 
