@@ -22,6 +22,7 @@ type Action =
   | { type: 'REMOVE_TASK'; groupId: string; taskId: string }
   | { type: 'UPDATE_TASK_STATUS'; groupId: string; taskId: string; status: TaskStatus }
   | { type: 'RENAME_TASK'; groupId: string; taskId: string; title: string }
+  | { type: 'MOVE_TASK'; fromGroupId: string; taskId: string; toGroupId: string; insertIndex: number }
   | { type: 'SELECT_WORKTREE'; path: string | null }
   | { type: 'OPEN_DIFF_TAB'; file: ChangedFile }
   | { type: 'CLOSE_DIFF_TAB'; filePath: string }
@@ -89,6 +90,41 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
             : g
         ),
       };
+    case 'MOVE_TASK': {
+      const { fromGroupId, taskId, toGroupId, insertIndex } = action;
+      if (fromGroupId === toGroupId) {
+        return {
+          ...state,
+          taskGroups: state.taskGroups.map((g) => {
+            if (g.id !== fromGroupId) return g;
+            const tasks = [...g.tasks];
+            const fromIndex = tasks.findIndex((t) => t.id === taskId);
+            if (fromIndex === -1) return g;
+            const [task] = tasks.splice(fromIndex, 1);
+            tasks.splice(insertIndex, 0, task);
+            return { ...g, tasks };
+          }),
+        };
+      } else {
+        let movedTask: Task | undefined;
+        const withRemoved = state.taskGroups.map((g) => {
+          if (g.id !== fromGroupId) return g;
+          movedTask = g.tasks.find((t) => t.id === taskId);
+          return { ...g, tasks: g.tasks.filter((t) => t.id !== taskId) };
+        });
+        if (!movedTask) return state;
+        const task = movedTask;
+        return {
+          ...state,
+          taskGroups: withRemoved.map((g) => {
+            if (g.id !== toGroupId) return g;
+            const tasks = [...g.tasks];
+            tasks.splice(insertIndex, 0, task);
+            return { ...g, tasks };
+          }),
+        };
+      }
+    }
     case 'SELECT_WORKTREE':
       return { ...state, activeWorktreePath: action.path, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
     case 'OPEN_DIFF_TAB': {
@@ -156,6 +192,7 @@ interface TaskGroupContextValue extends TaskGroupState {
   removeTask: (groupId: string, taskId: string) => Promise<void>;
   updateTaskStatus: (groupId: string, taskId: string, status: TaskStatus) => Promise<void>;
   renameTask: (groupId: string, taskId: string, title: string) => Promise<void>;
+  moveTask: (fromGroupId: string, taskId: string, toGroupId: string, insertIndex: number) => Promise<void>;
   selectWorktree: (path: string) => void;
   openDiffTab: (file: ChangedFile) => void;
   closeDiffTab: (filePath: string) => void;
@@ -234,6 +271,11 @@ export function RepoProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_TASK_STATUS', groupId, taskId, status });
   }, []);
 
+  const moveTask = useCallback(async (fromGroupId: string, taskId: string, toGroupId: string, insertIndex: number) => {
+    await window.relay.invoke('taskgroups:move-task', { fromGroupId, taskId, toGroupId, insertIndex });
+    dispatch({ type: 'MOVE_TASK', fromGroupId, taskId, toGroupId, insertIndex });
+  }, []);
+
   const renameTask = useCallback(async (groupId: string, taskId: string, title: string) => {
     await window.relay.invoke('taskgroups:rename-task', { groupId, taskId, title });
     dispatch({ type: 'RENAME_TASK', groupId, taskId, title });
@@ -279,6 +321,7 @@ export function RepoProvider({ children }: { children: ReactNode }) {
         removeTask,
         updateTaskStatus,
         renameTask,
+        moveTask,
         selectWorktree,
         openDiffTab,
         closeDiffTab,

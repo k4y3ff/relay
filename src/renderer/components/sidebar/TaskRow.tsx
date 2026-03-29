@@ -8,8 +8,16 @@ interface TaskRowProps {
 }
 
 export default function TaskRow({ groupId, task }: TaskRowProps) {
-  if (task.type === 'branch') {
-    return <BranchTaskRow groupId={groupId} task={task} />;
+  function handleDragStart(e: React.DragEvent) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('application/x-relay-task', JSON.stringify({ taskId: task.id, groupId }));
   }
-  return <ManualTaskRow groupId={groupId} task={task} />;
+
+  return (
+    <div draggable onDragStart={handleDragStart} style={{ cursor: 'grab' }}>
+      {task.type === 'branch'
+        ? <BranchTaskRow groupId={groupId} task={task} />
+        : <ManualTaskRow groupId={groupId} task={task} />}
+    </div>
+  );
 }

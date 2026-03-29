@@ -381,6 +381,49 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
+  // taskgroups:move-task — reorder within a group or move to another group
+  ipcMain.handle(
+    'taskgroups:move-task',
+    (_event, { fromGroupId, taskId, toGroupId, insertIndex }: { fromGroupId: string; taskId: string; toGroupId: string; insertIndex: number }): void => {
+      const existing = store.get('taskGroups');
+
+      if (fromGroupId === toGroupId) {
+        // Reorder within the same group
+        store.set(
+          'taskGroups',
+          existing.map((g) => {
+            if (g.id !== fromGroupId) return g;
+            const tasks = [...g.tasks];
+            const fromIndex = tasks.findIndex((t) => t.id === taskId);
+            if (fromIndex === -1) return g;
+            const [task] = tasks.splice(fromIndex, 1);
+            tasks.splice(insertIndex, 0, task);
+            return { ...g, tasks };
+          })
+        );
+      } else {
+        // Move across groups
+        let movedTask: PersistedTask | undefined;
+        const withRemoved = existing.map((g) => {
+          if (g.id !== fromGroupId) return g;
+          movedTask = g.tasks.find((t) => t.id === taskId);
+          return { ...g, tasks: g.tasks.filter((t) => t.id !== taskId) };
+        });
+        if (!movedTask) return;
+        const task = movedTask;
+        store.set(
+          'taskGroups',
+          withRemoved.map((g) => {
+            if (g.id !== toGroupId) return g;
+            const tasks = [...g.tasks];
+            tasks.splice(insertIndex, 0, task);
+            return { ...g, tasks };
+          })
+        );
+      }
+    }
+  );
+
   // taskgroups:rename-task — rename a task's title
   ipcMain.handle(
     'taskgroups:rename-task',
