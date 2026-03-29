@@ -190,7 +190,7 @@ export default function AddBranchModal({ groupId, onClose }: AddBranchModalProps
           <button
             onClick={handleConfirm}
             disabled={!isValid || loading}
-            className="px-3 py-1.5 text-[13px] rounded bg-[var(--color-mac-accent)] text-white disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+            className="px-3 py-1.5 text-[13px] rounded bg-[var(--color-mac-accent)] text-[var(--color-accent-text)] disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
           >
             {loading ? 'Creating…' : 'Add worktree'}
           </button>

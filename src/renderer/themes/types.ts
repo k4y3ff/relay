@@ -13,6 +13,7 @@ export interface AppThemeColors {
 
   // Accent
   accent: string;
+  accentText: string;        // text color on accent-background buttons
   accentHover: string;       // button :hover background color
   accentRowActive: string;   // accent-tinted active row highlight
   accentOverlay: string;     // accent-tinted button hover bg
