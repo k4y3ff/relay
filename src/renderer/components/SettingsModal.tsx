@@ -18,6 +18,7 @@ const EDITOR_THEMES: { id: string; label: string }[] = [
 export default function SettingsModal({ onClose }: Props) {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState<boolean | null>(null);
+  const [powerModeEnabled, setPowerModeEnabled] = useState<boolean | null>(null);
   const [editorTheme, setEditorTheme] = useState<string | null>(null);
   const [editorWordWrap, setEditorWordWrap] = useState<boolean | null>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -28,6 +29,9 @@ export default function SettingsModal({ onClose }: Props) {
     });
     window.relay.invoke('settings:get-sound-effects-enabled').then((val) => {
       setSoundEffectsEnabled(val as boolean);
+    });
+    window.relay.invoke('settings:get-power-mode-enabled').then((val) => {
+      setPowerModeEnabled(val as boolean);
     });
     window.relay.invoke('settings:get-editor-theme').then((val) => {
       setEditorTheme(val as string);
@@ -55,6 +59,13 @@ export default function SettingsModal({ onClose }: Props) {
     const next = !soundEffectsEnabled;
     setSoundEffectsEnabled(next);
     window.relay.invoke('settings:set-sound-effects-enabled', { enabled: next });
+  }
+
+  function handlePowerModeToggle() {
+    const next = !powerModeEnabled;
+    setPowerModeEnabled(next);
+    window.relay.invoke('settings:set-power-mode-enabled', { enabled: next });
+    window.dispatchEvent(new CustomEvent('settings:power-mode-changed', { detail: next }));
   }
 
   function handleWordWrapToggle() {
@@ -126,6 +137,29 @@ export default function SettingsModal({ onClose }: Props) {
             <span
               className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-150 ${
                 soundEffectsEnabled ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
+
+        <p className="text-[11px] font-medium text-[var(--color-mac-muted)] uppercase tracking-wide mt-4 mb-2">
+          Power Mode
+        </p>
+
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] text-[var(--color-mac-text)]">Sparkles while typing</span>
+          <button
+            role="switch"
+            aria-checked={powerModeEnabled ?? false}
+            onClick={handlePowerModeToggle}
+            disabled={powerModeEnabled === null}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 focus:outline-none disabled:opacity-50 ${
+              powerModeEnabled ? 'bg-[var(--color-mac-accent)]' : 'bg-[var(--color-mac-surface2)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-150 ${
+                powerModeEnabled ? 'translate-x-4' : 'translate-x-0'
               }`}
             />
           </button>

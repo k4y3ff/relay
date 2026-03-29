@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
+import { spawnSparklesAtXTermCursor } from '../../lib/sparkles';
 
 interface Props {
   worktreePath: string;
@@ -42,6 +43,9 @@ export default function TerminalEmbed({ worktreePath, active }: Props) {
       window.relay.invoke('terminal:write', { worktreePath, data });
     });
 
+    const screenEl = container.querySelector('.xterm-screen') as HTMLElement | null;
+    const onKey = term.onKey(() => spawnSparklesAtXTermCursor(term, container, screenEl));
+
     const refit = () => {
       if (!container.offsetWidth || !container.offsetHeight) return;
       fitAddon.fit();
@@ -68,6 +72,7 @@ export default function TerminalEmbed({ worktreePath, active }: Props) {
       window.removeEventListener('terminal:refit', refit);
       offData();
       onTermData.dispose();
+      onKey.dispose();
       observer.disconnect();
       term.dispose();
       termRef.current = null;
