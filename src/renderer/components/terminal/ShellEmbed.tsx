@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { spawnSparklesAtXTermCursor } from '../../lib/sparkles';
 // xterm CSS is already imported by TerminalEmbed; no need to re-import
 
 interface Props {
@@ -58,6 +59,9 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
       window.relay.invoke('shell:write', { tabId, data });
     });
 
+    const screenEl = container.querySelector('.xterm-screen') as HTMLElement | null;
+    const onKey = term.onKey(() => spawnSparklesAtXTermCursor(term, container, screenEl));
+
     const observer = new ResizeObserver(() => {
       const c = containerRef.current;
       if (!c?.offsetWidth || !c?.offsetHeight) return;
@@ -69,6 +73,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
     return () => {
       offData();
       onInput.dispose();
+      onKey.dispose();
       observer.disconnect();
       term.dispose();
       termRef.current = null;

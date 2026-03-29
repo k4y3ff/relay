@@ -22,6 +22,7 @@ import { shell } from '@codemirror/legacy-modes/mode/shell';
 import { yaml } from '@codemirror/legacy-modes/mode/yaml';
 import { toml } from '@codemirror/legacy-modes/mode/toml';
 import { useRepo } from '../../context/RepoContext';
+import { spawnSparkles } from '../../lib/sparkles';
 
 interface Props {
   worktreePath: string;
@@ -161,7 +162,11 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
             { key: 'Mod-s', run: () => { save(); return true; } },
           ]),
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) markTabDirty(filePath);
+            if (!update.docChanged) return;
+            markTabDirty(filePath);
+            const head = update.state.selection.main.head;
+            const coords = update.view.coordsAtPos(head);
+            if (coords) spawnSparkles(coords.left, coords.bottom);
           }),
           EditorView.theme({
             '&': { height: '100%', width: '100%' },

@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ChatPane from './ChatPane';
 import RightColumn from './RightColumn';
 import Sidebar from './Sidebar';
 import SettingsModal from '../SettingsModal';
 import { useRepo } from '../../context/RepoContext';
 import { useSoundEffects } from '../../hooks/useSoundEffects';
+import { usePowerMode } from '../../hooks/usePowerMode';
 
 const MIN_SIDEBAR = 160;
 const MAX_SIDEBAR = 500;
@@ -16,12 +17,14 @@ export default function AppShell() {
   const [rightW, setRightW] = useState(320);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { activeWorktreePath, activePaneTab } = useRepo();
+  const sparkleCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     return window.relay.on('open:settings', () => setSettingsOpen(true));
   }, []);
 
   useSoundEffects(activeWorktreePath, activePaneTab);
+  usePowerMode(sparkleCanvasRef);
 
   const onLeftDividerMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -70,6 +73,10 @@ export default function AppShell() {
         <RightColumn style={{ width: rightW }} />
       </div>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      <canvas
+        ref={sparkleCanvasRef}
+        style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999 }}
+      />
     </div>
   );
 }

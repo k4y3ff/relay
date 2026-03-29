@@ -221,6 +221,14 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('soundEffectsEnabled', enabled);
   });
 
+  // settings:get-power-mode-enabled — return whether power mode is enabled
+  ipcMain.handle('settings:get-power-mode-enabled', (): boolean => store.get('powerModeEnabled', false));
+
+  // settings:set-power-mode-enabled — persist the power mode preference
+  ipcMain.handle('settings:set-power-mode-enabled', (_event, { enabled }: { enabled: boolean }): void => {
+    store.set('powerModeEnabled', enabled);
+  });
+
   // settings:get-editor-theme — return the saved editor theme id
   ipcMain.handle('settings:get-editor-theme', (): string => store.get('editorTheme'));
 
