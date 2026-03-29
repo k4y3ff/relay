@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { AppTheme, AppThemeColors } from '../themes/types';
-import { DEFAULT_THEME } from '../themes';
+import { DEFAULT_THEME, THEMES } from '../themes';
 
 // ── CSS variable derivation ──────────────────────────────────────────────────
 
@@ -88,11 +88,24 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<AppTheme>(DEFAULT_THEME);
+  const [theme, setThemeState] = useState<AppTheme>(DEFAULT_THEME);
+
+  useEffect(() => {
+    window.relay.invoke('settings:get-app-theme').then((name) => {
+      const t = THEMES[name as string] ?? DEFAULT_THEME;
+      setThemeState(t);
+      applyTheme(t);
+    });
+  }, []);
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  function setTheme(t: AppTheme) {
+    setThemeState(t);
+    window.relay.invoke('settings:set-app-theme', { theme: t.name });
+  }
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

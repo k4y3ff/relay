@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTheme } from '../context/ThemeContext';
+import { THEMES } from '../themes';
 
 interface Props {
   onClose: () => void;
 }
+
+const APP_THEMES: { id: string; label: string }[] = [
+  { id: 'dark', label: 'Default' },
+  { id: 'pink', label: 'Pink' },
+];
 
 const EDITOR_THEMES: { id: string; label: string }[] = [
   { id: 'one-dark', label: 'One Dark' },
@@ -16,6 +23,7 @@ const EDITOR_THEMES: { id: string; label: string }[] = [
 ];
 
 export default function SettingsModal({ onClose }: Props) {
+  const { theme, setTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState<boolean | null>(null);
   const [powerModeEnabled, setPowerModeEnabled] = useState<boolean | null>(null);
@@ -95,6 +103,23 @@ export default function SettingsModal({ onClose }: Props) {
     >
       <div className="bg-[var(--color-mac-surface)] border border-[var(--color-mac-border)] rounded-lg shadow-2xl p-5 w-72">
         <h2 className="text-[14px] font-semibold text-[var(--color-mac-text)] mb-4">Settings</h2>
+
+        <p className="text-[11px] font-medium text-[var(--color-mac-muted)] uppercase tracking-wide mb-2">
+          Appearance
+        </p>
+
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-[13px] text-[var(--color-mac-text)]">Theme</span>
+          <select
+            value={theme.name}
+            onChange={(e) => setTheme(THEMES[e.target.value])}
+            className="text-[12px] text-[var(--color-mac-text)] bg-[var(--color-mac-surface2)] border border-[var(--color-mac-border)] rounded px-2 py-1 cursor-pointer focus:outline-none"
+          >
+            {APP_THEMES.map((t) => (
+              <option key={t.id} value={t.id}>{t.label}</option>
+            ))}
+          </select>
+        </div>
 
         <p className="text-[11px] font-medium text-[var(--color-mac-muted)] uppercase tracking-wide mb-2">
           Notifications
