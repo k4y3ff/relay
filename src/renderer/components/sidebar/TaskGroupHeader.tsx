@@ -48,7 +48,7 @@ export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask }:
   return (
     <div
       className="group flex items-center gap-1.5 px-3 cursor-pointer select-none hover:bg-[var(--color-mac-surface2)] text-[var(--color-mac-muted)]"
-      style={{ height: 26, minHeight: 26 }}
+      style={{ height: 28, minHeight: 28 }}
       onClick={() => { if (!renaming) toggleGroupCollapsed(group.id); }}
     >
       {/* Chevron */}
@@ -56,7 +56,7 @@ export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask }:
         className="text-[var(--color-mac-muted)] transition-transform duration-100 flex-shrink-0 flex items-center"
         style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
       >
-        <ChevronDown size={12} />
+        <ChevronDown size={13} />
       </span>
 
       {/* Name or rename input */}
@@ -69,11 +69,11 @@ export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask }:
           onKeyDown={handleRenameKeyDown}
           onBlur={commitRename}
           onClick={(e) => e.stopPropagation()}
-          className="flex-1 px-1 py-0 text-[13px] font-medium rounded bg-[var(--color-mac-bg)] border border-[var(--color-mac-accent)] text-[var(--color-mac-text)] outline-none"
+          className="flex-1 px-1 py-0 text-[14px] font-medium rounded bg-[var(--color-mac-bg)] border border-[var(--color-mac-accent)] text-[var(--color-mac-text)] outline-none"
           style={{ userSelect: 'text' }}
         />
       ) : (
-        <span className="flex-1 truncate text-[11px] font-semibold uppercase tracking-widest">{group.name}</span>
+        <span className="flex-1 truncate text-[12px] font-semibold uppercase tracking-widest">{group.name}</span>
       )}
 
       {/* Overflow menu */}

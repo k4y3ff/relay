@@ -55,8 +55,8 @@ export default function BranchTaskRow({ groupId, task }: BranchTaskRowProps) {
     <div
       title={task.worktree.path}
       onClick={() => selectWorktree(task.worktree.path)}
-      style={{ height: 28, minHeight: 28 }}
-      className={`group flex items-center justify-between pl-6 pr-3 cursor-pointer text-[13px] select-none ${
+      style={{ height: 30, minHeight: 30 }}
+      className={`group flex items-center justify-between pl-6 pr-3 cursor-pointer text-[14px] select-none ${
         isActive
           ? 'worktree-row-active text-[var(--color-mac-text)]'
           : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'
@@ -68,7 +68,7 @@ export default function BranchTaskRow({ groupId, task }: BranchTaskRowProps) {
       </div>
       <div className="relative shrink-0 w-5 flex items-center justify-end">
         {stats && (
-          <span className="absolute right-0 flex gap-1 text-[11px] font-mono whitespace-nowrap group-hover:hidden">
+          <span className="absolute right-0 flex gap-1 text-[12px] font-mono whitespace-nowrap group-hover:hidden">
             {stats.added > 0 && <span style={{ color: '#4ade80' }}>+{stats.added}</span>}
             {stats.deleted > 0 && <span style={{ color: '#f87171' }}>-{stats.deleted}</span>}
             {stats.added === 0 && stats.deleted === 0 && (
