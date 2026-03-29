@@ -3,6 +3,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import '@xterm/xterm/css/xterm.css';
 import { spawnSparklesAtXTermCursor } from '../../lib/sparkles';
+import { useTheme } from '../../context/ThemeContext';
 
 interface Props {
   terminalId: string;
@@ -14,12 +15,17 @@ export default function TerminalEmbed({ terminalId, worktreePath, active }: Prop
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const term = new Terminal({ allowProposedApi: true, fontSize: 13 });
+    const term = new Terminal({
+      allowProposedApi: true,
+      fontSize: 13,
+      theme: theme.chatTerminal ?? theme.terminal,
+    });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);
@@ -81,6 +87,13 @@ export default function TerminalEmbed({ terminalId, worktreePath, active }: Prop
       fitAddonRef.current = null;
     };
   }, [terminalId]);
+
+  // Apply theme updates to the running terminal
+  useEffect(() => {
+    if (termRef.current) {
+      termRef.current.options.theme = theme.chatTerminal ?? theme.terminal;
+    }
+  }, [theme]);
 
   // Refit when becoming visible after being hidden
   useEffect(() => {

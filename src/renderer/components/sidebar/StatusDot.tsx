@@ -1,10 +1,10 @@
 import type { TaskStatus } from '../../types/repo';
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  'todo': '#6b7280',
-  'in-progress': '#3b82f6',
-  'blocked': '#f97316',
-  'done': '#22c55e',
+const STATUS_VARS: Record<TaskStatus, string> = {
+  'todo': 'var(--color-status-todo)',
+  'in-progress': 'var(--color-status-in-progress)',
+  'blocked': 'var(--color-status-blocked)',
+  'done': 'var(--color-status-done)',
 };
 
 const STATUS_CYCLE: TaskStatus[] = ['todo', 'in-progress', 'blocked', 'done'];
@@ -29,7 +29,7 @@ export default function StatusDot({ status, onChange }: StatusDotProps) {
       style={{
         width: 8,
         height: 8,
-        background: STATUS_COLORS[status],
+        background: STATUS_VARS[status],
         cursor: 'pointer',
         border: 'none',
         padding: 0,
