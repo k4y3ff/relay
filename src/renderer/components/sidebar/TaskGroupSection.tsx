@@ -18,14 +18,18 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  function handleDragOver(e: React.DragEvent) {
+  function handleTaskDragEnter(e: React.DragEvent, i: number) {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    setDropIndex(e.clientY < rect.top + rect.height / 2 ? i : i + 1);
+  }
+
+  // Fallback: when dragging over the container but not over any task row
+  // (e.g. an empty group, or below the last task)
+  function handleContainerDragOver(e: React.DragEvent) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    const rect = containerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const relY = e.clientY - rect.top;
-    const idx = Math.min(group.tasks.length, Math.max(0, Math.round(relY / 28)));
-    setDropIndex(idx);
+    if (group.tasks.length === 0) setDropIndex(0);
   }
 
   function handleDragLeave(e: React.DragEvent) {
@@ -42,7 +46,6 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
       ) as { taskId: string; groupId: string };
 
       let insertIndex = dropIndex ?? group.tasks.length;
-      // When reordering within the same group, account for the removal shifting indices
       if (fromGroupId === group.id) {
         const fromIndex = group.tasks.findIndex((t) => t.id === taskId);
         if (fromIndex !== -1 && fromIndex < insertIndex) insertIndex -= 1;
@@ -63,7 +66,7 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
       />
       <div
         ref={containerRef}
-        onDragOver={handleDragOver}
+        onDragOver={handleContainerDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         style={{
@@ -89,8 +92,10 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
             }}
           />
         )}
-        {group.tasks.map((task) => (
-          <TaskRow key={task.id} groupId={group.id} task={task} />
+        {group.tasks.map((task, i) => (
+          <div key={task.id} onDragEnter={(e) => handleTaskDragEnter(e, i)}>
+            <TaskRow groupId={group.id} task={task} />
+          </div>
         ))}
         {addingManual && (
           <AddManualTaskInput groupId={group.id} onClose={() => setAddingManual(false)} />
