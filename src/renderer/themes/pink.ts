@@ -1,16 +1,15 @@
 import type { AppTheme } from './types';
 
-// Hot pink hue (H:330°) derived by scaling #FF69B4 (CSS hotpink) down in brightness
-// while preserving exact R:G:B ratios — guarantees the same hue as true hot pink.
+// Vivid hot pink — bright, saturated surfaces inspired by #D42FA5 / #D535D0
 export const pinkTheme: AppTheme = {
   name: 'pink',
   colorScheme: 'dark',
   colors: {
-    // Surfaces — all H:330°, same hue as #FF69B4
-    bg: '#8c3a63',       // hotpink @ 55% brightness
-    surface: '#a6446f',  // hotpink @ 65% brightness
-    surface2: '#bf507e', // hotpink @ 75% brightness
-    border: 'rgba(255, 180, 220, 0.22)',
+    // Surfaces — vivid hot pink/magenta
+    bg: '#c2247f',
+    surface: '#d42d8f',
+    surface2: '#e03a9d',
+    border: 'rgba(255, 160, 220, 0.30)',
 
     // Text
     text: '#fff0f8',
@@ -25,10 +24,10 @@ export const pinkTheme: AppTheme = {
     accentFocusRing: 'rgba(255, 224, 242, 0.65)',
 
     // Per-area backgrounds
-    titlebarBg: 'rgba(124, 50, 86, 0.95)',
-    sidebarBg: 'rgba(148, 60, 104, 0.93)',
-    chatPaneBg: 'rgba(136, 54, 94, 0.95)',
-    rightColumnBg: 'rgba(136, 54, 94, 0.95)',
+    titlebarBg: 'rgba(175, 28, 110, 0.95)',
+    sidebarBg: 'rgba(194, 36, 127, 0.93)',
+    chatPaneBg: 'rgba(180, 32, 118, 0.95)',
+    rightColumnBg: 'rgba(180, 32, 118, 0.95)',
 
     // Diff viewer
     diffAdded: '#4ade80',
@@ -54,12 +53,12 @@ export const pinkTheme: AppTheme = {
     statusDone: '#4ade80',
   },
   terminal: {
-    background: '#8c3a63',
+    background: '#c2247f',
     foreground: '#fff0f8',
     cursor: '#ffe0f2',
-    cursorAccent: '#8c3a63',
+    cursorAccent: '#c2247f',
     selectionBackground: 'rgba(255, 224, 242, 0.30)',
-    black: '#8c3a63',
+    black: '#c2247f',
     red: '#fda4af',
     green: '#4ade80',
     yellow: '#facc15',
