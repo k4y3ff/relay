@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useReducer, useCallback, ReactNode } from 'react';
-import type { TaskGroup, BranchEntry, ChangedFile } from '../types/repo';
+import type { TaskGroup, Task, BranchTask, ManualTask, TaskStatus, ChangedFile } from '../types/repo';
 
 // ── State ──────────────────────────────────────────────────────────────────
 
@@ -18,8 +18,10 @@ type Action =
   | { type: 'ADD_TASK_GROUP'; group: TaskGroup }
   | { type: 'REMOVE_TASK_GROUP'; groupId: string }
   | { type: 'RENAME_TASK_GROUP'; groupId: string; name: string }
-  | { type: 'ADD_BRANCH'; groupId: string; branch: BranchEntry }
-  | { type: 'REMOVE_BRANCH'; groupId: string; worktreePath: string }
+  | { type: 'ADD_TASK'; groupId: string; task: Task }
+  | { type: 'REMOVE_TASK'; groupId: string; taskId: string }
+  | { type: 'UPDATE_TASK_STATUS'; groupId: string; taskId: string; status: TaskStatus }
+  | { type: 'RENAME_TASK'; groupId: string; taskId: string; title: string }
   | { type: 'SELECT_WORKTREE'; path: string | null }
   | { type: 'OPEN_DIFF_TAB'; file: ChangedFile }
   | { type: 'CLOSE_DIFF_TAB'; filePath: string }
@@ -44,25 +46,48 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
           g.id === action.groupId ? { ...g, name: action.name } : g
         ),
       };
-    case 'ADD_BRANCH':
+    case 'ADD_TASK':
       return {
         ...state,
         taskGroups: state.taskGroups.map((g) =>
           g.id === action.groupId
-            ? { ...g, branches: [...g.branches, action.branch] }
+            ? { ...g, tasks: [...g.tasks, action.task] }
             : g
         ),
       };
-    case 'REMOVE_BRANCH':
+    case 'REMOVE_TASK': {
+      // If removing the active branch task, clear active worktree
+      const group = state.taskGroups.find((g) => g.id === action.groupId);
+      const task = group?.tasks.find((t) => t.id === action.taskId);
+      const removedPath = task?.type === 'branch' ? task.worktree.path : null;
       return {
         ...state,
         taskGroups: state.taskGroups.map((g) =>
           g.id === action.groupId
-            ? { ...g, branches: g.branches.filter((b) => b.worktree.path !== action.worktreePath) }
+            ? { ...g, tasks: g.tasks.filter((t) => t.id !== action.taskId) }
             : g
         ),
         activeWorktreePath:
-          state.activeWorktreePath === action.worktreePath ? null : state.activeWorktreePath,
+          removedPath && state.activeWorktreePath === removedPath ? null : state.activeWorktreePath,
+      };
+    }
+    case 'UPDATE_TASK_STATUS':
+      return {
+        ...state,
+        taskGroups: state.taskGroups.map((g) =>
+          g.id === action.groupId
+            ? { ...g, tasks: g.tasks.map((t) => t.id === action.taskId ? { ...t, status: action.status } : t) }
+            : g
+        ),
+      };
+    case 'RENAME_TASK':
+      return {
+        ...state,
+        taskGroups: state.taskGroups.map((g) =>
+          g.id === action.groupId
+            ? { ...g, tasks: g.tasks.map((t) => t.id === action.taskId ? { ...t, title: action.title } : t) }
+            : g
+        ),
       };
     case 'SELECT_WORKTREE':
       return { ...state, activeWorktreePath: action.path, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
@@ -80,7 +105,6 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
       const newTabs = state.diffTabs.filter((t) => t.path !== action.filePath);
       let newActive = state.activePaneTab;
       if (state.activePaneTab === action.filePath) {
-        // Switch to neighbouring tab or chat
         newActive = newTabs[Math.max(0, idx - 1)]?.path ?? 'chat';
       }
       const newDirtyTabs = new Set(state.dirtyTabs);
@@ -127,8 +151,11 @@ interface TaskGroupContextValue extends TaskGroupState {
   createTaskGroup: (name: string) => Promise<TaskGroup>;
   removeTaskGroup: (groupId: string) => Promise<void>;
   renameTaskGroup: (groupId: string, name: string) => Promise<void>;
-  addBranchToGroup: (groupId: string, folderPath: string, branchName: string, defaultBranch: string) => Promise<BranchEntry>;
-  removeBranchFromGroup: (groupId: string, worktreePath: string, repoRootPath: string) => Promise<void>;
+  addBranchToGroup: (groupId: string, folderPath: string, branchName: string, defaultBranch: string) => Promise<BranchTask>;
+  addManualTask: (groupId: string, title: string) => Promise<ManualTask>;
+  removeTask: (groupId: string, taskId: string) => Promise<void>;
+  updateTaskStatus: (groupId: string, taskId: string, status: TaskStatus) => Promise<void>;
+  renameTask: (groupId: string, taskId: string, title: string) => Promise<void>;
   selectWorktree: (path: string) => void;
   openDiffTab: (file: ChangedFile) => void;
   closeDiffTab: (filePath: string) => void;
@@ -161,7 +188,7 @@ export function RepoProvider({ children }: { children: ReactNode }) {
 
   const createTaskGroup = useCallback(async (name: string): Promise<TaskGroup> => {
     const persisted = (await window.relay.invoke('taskgroups:create', { name })) as { id: string; name: string };
-    const group: TaskGroup = { id: persisted.id, name: persisted.name, branches: [] };
+    const group: TaskGroup = { id: persisted.id, name: persisted.name, tasks: [] };
     dispatch({ type: 'ADD_TASK_GROUP', group });
     return group;
   }, []);
@@ -177,27 +204,40 @@ export function RepoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addBranchToGroup = useCallback(
-    async (groupId: string, folderPath: string, branchName: string, defaultBranch: string): Promise<BranchEntry> => {
-      const branch = (await window.relay.invoke('taskgroups:add-branch', {
+    async (groupId: string, folderPath: string, branchName: string, defaultBranch: string): Promise<BranchTask> => {
+      const task = (await window.relay.invoke('taskgroups:add-branch', {
         groupId,
         folderPath,
         branchName,
         defaultBranch,
-      })) as BranchEntry;
-      dispatch({ type: 'ADD_BRANCH', groupId, branch });
-      dispatch({ type: 'SELECT_WORKTREE', path: branch.worktree.path });
-      return branch;
+      })) as BranchTask;
+      dispatch({ type: 'ADD_TASK', groupId, task });
+      dispatch({ type: 'SELECT_WORKTREE', path: task.worktree.path });
+      return task;
     },
     []
   );
 
-  const removeBranchFromGroup = useCallback(
-    async (groupId: string, worktreePath: string, repoRootPath: string) => {
-      await window.relay.invoke('taskgroups:remove-branch', { groupId, worktreePath, repoRootPath });
-      dispatch({ type: 'REMOVE_BRANCH', groupId, worktreePath });
-    },
-    []
-  );
+  const addManualTask = useCallback(async (groupId: string, title: string): Promise<ManualTask> => {
+    const task = (await window.relay.invoke('taskgroups:add-manual-task', { groupId, title })) as ManualTask;
+    dispatch({ type: 'ADD_TASK', groupId, task });
+    return task;
+  }, []);
+
+  const removeTask = useCallback(async (groupId: string, taskId: string) => {
+    await window.relay.invoke('taskgroups:remove-task', { groupId, taskId });
+    dispatch({ type: 'REMOVE_TASK', groupId, taskId });
+  }, []);
+
+  const updateTaskStatus = useCallback(async (groupId: string, taskId: string, status: TaskStatus) => {
+    await window.relay.invoke('taskgroups:update-task-status', { groupId, taskId, status });
+    dispatch({ type: 'UPDATE_TASK_STATUS', groupId, taskId, status });
+  }, []);
+
+  const renameTask = useCallback(async (groupId: string, taskId: string, title: string) => {
+    await window.relay.invoke('taskgroups:rename-task', { groupId, taskId, title });
+    dispatch({ type: 'RENAME_TASK', groupId, taskId, title });
+  }, []);
 
   const selectWorktree = useCallback((path: string) => {
     dispatch({ type: 'SELECT_WORKTREE', path });
@@ -235,7 +275,10 @@ export function RepoProvider({ children }: { children: ReactNode }) {
         removeTaskGroup,
         renameTaskGroup,
         addBranchToGroup,
-        removeBranchFromGroup,
+        addManualTask,
+        removeTask,
+        updateTaskStatus,
+        renameTask,
         selectWorktree,
         openDiffTab,
         closeDiffTab,

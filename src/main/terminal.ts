@@ -93,7 +93,7 @@ export class TerminalManager {
   private resolveLabels(worktreePath: string): { groupName: string; branchName: string } | null {
     const groups = store.get('taskGroups');
     for (const group of groups) {
-      if (group.branches.some((b) => b.worktreePath === worktreePath)) {
+      if (group.tasks.some((t) => t.type === 'branch' && t.worktreePath === worktreePath)) {
         return {
           groupName: group.name,
           branchName: worktreePath.split('/').pop() ?? worktreePath,
