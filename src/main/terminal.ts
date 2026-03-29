@@ -9,6 +9,7 @@ interface WorktreeNotifyState {
 
 export class TerminalManager {
   private ptys = new Map<string, pty.IPty>();
+  private terminalPaths = new Map<string, string>(); // terminalId → worktreePath
   private notifyState = new Map<string, WorktreeNotifyState>();
   private win: BrowserWindow;
 
@@ -16,8 +17,10 @@ export class TerminalManager {
     this.win = win;
   }
 
-  create(worktreePath: string, cols: number, rows: number): void {
-    if (this.ptys.has(worktreePath)) return;
+  create(terminalId: string, worktreePath: string, cols: number, rows: number): void {
+    if (this.ptys.has(terminalId)) return;
+
+    this.terminalPaths.set(terminalId, worktreePath);
 
     const shell = process.env.SHELL || '/bin/zsh';
     const proc = pty.spawn(shell, ['-l', '-c', 'claude'], {
@@ -30,18 +33,19 @@ export class TerminalManager {
 
     proc.onData((data) => {
       if (this.win.isDestroyed()) return;
-      this.win.webContents.send('terminal:data', { worktreePath, data });
+      this.win.webContents.send('terminal:data', { terminalId, data });
 
-      const s = this.notifyState.get(worktreePath);
+      const s = this.notifyState.get(terminalId);
       if (s?.pendingResponse) {
         if (s.idleTimer !== null) clearTimeout(s.idleTimer);
         s.idleTimer = setTimeout(() => {
           s.idleTimer = null;
           s.pendingResponse = false;
           if (!this.win.isDestroyed()) {
-            this.win.webContents.send('response:complete', { worktreePath });
+            const path = this.terminalPaths.get(terminalId) ?? worktreePath;
+            this.win.webContents.send('response:complete', { worktreePath: path });
             if (!this.win.isFocused()) {
-              this.fireNotification(worktreePath);
+              this.fireNotification(path);
             }
           }
         }, 1500);
@@ -49,20 +53,21 @@ export class TerminalManager {
     });
 
     proc.onExit(() => {
-      this.ptys.delete(worktreePath);
-      const s = this.notifyState.get(worktreePath);
+      this.ptys.delete(terminalId);
+      const s = this.notifyState.get(terminalId);
       if (s?.idleTimer !== null) clearTimeout(s!.idleTimer!);
-      this.notifyState.delete(worktreePath);
+      this.notifyState.delete(terminalId);
+      this.terminalPaths.delete(terminalId);
     });
 
-    this.ptys.set(worktreePath, proc);
+    this.ptys.set(terminalId, proc);
   }
 
-  write(worktreePath: string, data: string): void {
-    this.ptys.get(worktreePath)?.write(data);
+  write(terminalId: string, data: string): void {
+    this.ptys.get(terminalId)?.write(data);
 
     if (/[\r\n]/.test(data)) {
-      const s = this.getOrCreateNotifyState(worktreePath);
+      const s = this.getOrCreateNotifyState(terminalId);
       s.pendingResponse = true;
       if (s.idleTimer !== null) {
         clearTimeout(s.idleTimer);
@@ -71,8 +76,8 @@ export class TerminalManager {
     }
   }
 
-  resize(worktreePath: string, cols: number, rows: number): void {
-    this.ptys.get(worktreePath)?.resize(cols, rows);
+  resize(terminalId: string, cols: number, rows: number): void {
+    this.ptys.get(terminalId)?.resize(cols, rows);
   }
 
   killAll(): void {
@@ -81,13 +86,14 @@ export class TerminalManager {
     }
     this.ptys.clear();
     this.notifyState.clear();
+    this.terminalPaths.clear();
   }
 
-  private getOrCreateNotifyState(worktreePath: string): WorktreeNotifyState {
-    if (!this.notifyState.has(worktreePath)) {
-      this.notifyState.set(worktreePath, { pendingResponse: false, idleTimer: null });
+  private getOrCreateNotifyState(terminalId: string): WorktreeNotifyState {
+    if (!this.notifyState.has(terminalId)) {
+      this.notifyState.set(terminalId, { pendingResponse: false, idleTimer: null });
     }
-    return this.notifyState.get(worktreePath)!;
+    return this.notifyState.get(terminalId)!;
   }
 
   private resolveLabels(worktreePath: string): { groupName: string; branchName: string } | null {
