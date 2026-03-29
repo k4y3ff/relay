@@ -26,6 +26,7 @@ export default function SettingsModal({ onClose }: Props) {
   const { theme, setTheme } = useTheme();
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState<boolean | null>(null);
+  const [customSoundPath, setCustomSoundPath] = useState<string | null | undefined>(undefined);
   const [powerModeEnabled, setPowerModeEnabled] = useState<boolean | null>(null);
   const [editorTheme, setEditorTheme] = useState<string | null>(null);
   const [editorWordWrap, setEditorWordWrap] = useState<boolean | null>(null);
@@ -37,6 +38,9 @@ export default function SettingsModal({ onClose }: Props) {
     });
     window.relay.invoke('settings:get-sound-effects-enabled').then((val) => {
       setSoundEffectsEnabled(val as boolean);
+    });
+    window.relay.invoke('settings:get-custom-sound-path').then((val) => {
+      setCustomSoundPath(val as string | null);
     });
     window.relay.invoke('settings:get-power-mode-enabled').then((val) => {
       setPowerModeEnabled(val as boolean);
@@ -67,6 +71,19 @@ export default function SettingsModal({ onClose }: Props) {
     const next = !soundEffectsEnabled;
     setSoundEffectsEnabled(next);
     window.relay.invoke('settings:set-sound-effects-enabled', { enabled: next });
+  }
+
+  async function handleSelectCustomSound() {
+    const selected = (await window.relay.invoke('dialog:open-audio-file')) as string | null;
+    if (selected) {
+      setCustomSoundPath(selected);
+      window.relay.invoke('settings:set-custom-sound-path', { path: selected });
+    }
+  }
+
+  function handleClearCustomSound() {
+    setCustomSoundPath(null);
+    window.relay.invoke('settings:set-custom-sound-path', { path: null });
   }
 
   function handlePowerModeToggle() {
@@ -166,6 +183,30 @@ export default function SettingsModal({ onClose }: Props) {
             />
           </button>
         </div>
+
+        {soundEffectsEnabled && (
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-[13px] text-[var(--color-mac-text)]">Custom sound</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleSelectCustomSound}
+                className="text-[12px] text-[var(--color-mac-text)] bg-[var(--color-mac-surface2)] border border-[var(--color-mac-border)] rounded px-2 py-1 cursor-pointer hover:opacity-80 transition-opacity max-w-[110px] truncate"
+                title={customSoundPath ?? 'Default'}
+              >
+                {customSoundPath ? customSoundPath.split('/').pop() : 'Default'}
+              </button>
+              {customSoundPath && (
+                <button
+                  onClick={handleClearCustomSound}
+                  className="text-[12px] text-[var(--color-mac-muted)] hover:text-[var(--color-mac-text)] transition-colors leading-none"
+                  title="Use default sound"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <p className="text-[11px] font-medium text-[var(--color-mac-muted)] uppercase tracking-wide mt-4 mb-2">
           Power Mode

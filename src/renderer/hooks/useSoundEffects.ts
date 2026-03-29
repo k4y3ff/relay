@@ -38,7 +38,12 @@ export function useSoundEffects(activeWorktreePath: string | null, activePaneTab
         activePaneTabRef.current === 'chat';
 
       if (!tabVisible) {
-        playChime();
+        const dataUrl = await window.relay.invoke('audio:read-custom-sound-as-data-url') as string | null;
+        if (dataUrl) {
+          new Audio(dataUrl).play().catch(() => playChime());
+        } else {
+          playChime();
+        }
       }
     });
   }, []);

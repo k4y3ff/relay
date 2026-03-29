@@ -222,6 +222,38 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('soundEffectsEnabled', enabled);
   });
 
+  // settings:get-custom-sound-path — return the user-selected custom sound file path
+  ipcMain.handle('settings:get-custom-sound-path', (): string | null => store.get('customSoundPath'));
+
+  // settings:set-custom-sound-path — persist the custom sound file path (null clears it)
+  ipcMain.handle('settings:set-custom-sound-path', (_event, { path: soundPath }: { path: string | null }): void => {
+    store.set('customSoundPath', soundPath);
+  });
+
+  // dialog:open-audio-file — native file picker filtered to audio formats
+  ipcMain.handle('dialog:open-audio-file', async (): Promise<string | null> => {
+    const result = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters: [{ name: 'Audio Files', extensions: ['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac'] }],
+    });
+    return result.canceled ? null : (result.filePaths[0] ?? null);
+  });
+
+  // audio:read-custom-sound-as-data-url — read the stored custom sound file and return a base64 data URL
+  // Uses the path from the store (not renderer-supplied) to prevent arbitrary file reads.
+  ipcMain.handle('audio:read-custom-sound-as-data-url', (): string | null => {
+    const filePath = store.get('customSoundPath');
+    if (!filePath) return null;
+    const ext = path.extname(filePath).slice(1).toLowerCase();
+    const mimeMap: Record<string, string> = {
+      mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg',
+      m4a: 'audio/mp4', aac: 'audio/aac', flac: 'audio/flac',
+    };
+    const mime = mimeMap[ext] ?? 'audio/mpeg';
+    const data = fs.readFileSync(filePath).toString('base64');
+    return `data:${mime};base64,${data}`;
+  });
+
   // settings:get-power-mode-enabled — return whether power mode is enabled
   ipcMain.handle('settings:get-power-mode-enabled', (): boolean => store.get('powerModeEnabled', false));
 
