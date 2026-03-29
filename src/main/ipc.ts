@@ -599,22 +599,22 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
 
   ipcMain.handle(
     'terminal:create',
-    (_event, { worktreePath, cols, rows }: { worktreePath: string; cols: number; rows: number }): void => {
-      terminal.create(worktreePath, cols, rows);
+    (_event, { terminalId, worktreePath, cols, rows }: { terminalId: string; worktreePath: string; cols: number; rows: number }): void => {
+      terminal.create(terminalId, worktreePath, cols, rows);
     }
   );
 
   ipcMain.handle(
     'terminal:write',
-    (_event, { worktreePath, data }: { worktreePath: string; data: string }): void => {
-      terminal.write(worktreePath, data);
+    (_event, { terminalId, data }: { terminalId: string; data: string }): void => {
+      terminal.write(terminalId, data);
     }
   );
 
   ipcMain.handle(
     'terminal:resize',
-    (_event, { worktreePath, cols, rows }: { worktreePath: string; cols: number; rows: number }): void => {
-      terminal.resize(worktreePath, cols, rows);
+    (_event, { terminalId, cols, rows }: { terminalId: string; cols: number; rows: number }): void => {
+      terminal.resize(terminalId, cols, rows);
     }
   );
 

@@ -5,11 +5,12 @@ import '@xterm/xterm/css/xterm.css';
 import { spawnSparklesAtXTermCursor } from '../../lib/sparkles';
 
 interface Props {
+  terminalId: string;
   worktreePath: string;
   active: boolean;
 }
 
-export default function TerminalEmbed({ worktreePath, active }: Props) {
+export default function TerminalEmbed({ terminalId, worktreePath, active }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -28,19 +29,20 @@ export default function TerminalEmbed({ worktreePath, active }: Props) {
     fitAddonRef.current = fitAddon;
 
     window.relay.invoke('terminal:create', {
+      terminalId,
       worktreePath,
       cols: term.cols,
       rows: term.rows,
     });
 
     const onData = (payload: unknown) => {
-      const { worktreePath: wp, data } = payload as { worktreePath: string; data: string };
-      if (wp === worktreePath) term.write(data);
+      const { terminalId: tid, data } = payload as { terminalId: string; data: string };
+      if (tid === terminalId) term.write(data);
     };
     const offData = window.relay.on('terminal:data', onData);
 
     const onTermData = term.onData((data) => {
-      window.relay.invoke('terminal:write', { worktreePath, data });
+      window.relay.invoke('terminal:write', { terminalId, data });
     });
 
     const screenEl = container.querySelector('.xterm-screen') as HTMLElement | null;
@@ -50,7 +52,7 @@ export default function TerminalEmbed({ worktreePath, active }: Props) {
       if (!container.offsetWidth || !container.offsetHeight) return;
       fitAddon.fit();
       window.relay.invoke('terminal:resize', {
-        worktreePath,
+        terminalId,
         cols: term.cols,
         rows: term.rows,
       });
@@ -61,7 +63,7 @@ export default function TerminalEmbed({ worktreePath, active }: Props) {
       if (!container.offsetWidth || !container.offsetHeight) return;
       fitAddon.fit();
       window.relay.invoke('terminal:resize', {
-        worktreePath,
+        terminalId,
         cols: term.cols,
         rows: term.rows,
       });
@@ -78,7 +80,7 @@ export default function TerminalEmbed({ worktreePath, active }: Props) {
       termRef.current = null;
       fitAddonRef.current = null;
     };
-  }, [worktreePath]);
+  }, [terminalId]);
 
   // Refit when becoming visible after being hidden
   useEffect(() => {
@@ -89,13 +91,13 @@ export default function TerminalEmbed({ worktreePath, active }: Props) {
       const term = termRef.current;
       if (term) {
         window.relay.invoke('terminal:resize', {
-          worktreePath,
+          terminalId,
           cols: term.cols,
           rows: term.rows,
         });
       }
     }
-  }, [active, worktreePath]);
+  }, [active, terminalId]);
 
   return (
     <div
