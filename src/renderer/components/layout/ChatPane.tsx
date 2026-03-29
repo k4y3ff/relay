@@ -257,6 +257,17 @@ export default function ChatPane() {
           status={activeDiffFile.status}
           added={activeDiffFile.added}
           deleted={activeDiffFile.deleted}
+          chatTabs={activeChatTabs}
+          activeChatTabId={activeChatTabId}
+          chatTabLabels={chatTabLabels}
+          onOpenChat={(tabId) => {
+            setActiveChatTabByPath((prev) => {
+              const next = new Map(prev);
+              next.set(activeWorktreePath, tabId);
+              return next;
+            });
+            selectPaneTab('chat');
+          }}
         />
       )}
     </div>
