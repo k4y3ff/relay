@@ -54,18 +54,18 @@ export default function SidebarFilterMenu({
     <div
       ref={ref}
       className="absolute left-0 right-0 z-10 border-b border-x border-[var(--color-mac-border)] bg-[var(--color-mac-surface2)]"
-      style={{ top: 32 }}
+      style={{ top: 34 }}
     >
       {/* Group by */}
       <div className="px-3 pt-2.5 pb-1">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)] mb-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)] mb-1.5">
           Group by
         </p>
         <div className="flex flex-col gap-0.5">
           {GROUP_BY_OPTIONS.map(({ value, label }) => (
             <label
               key={value}
-              className="flex items-center gap-2 text-[12px] text-[var(--color-mac-text)] py-0.5 cursor-pointer select-none"
+              className="flex items-center gap-2 text-[13px] text-[var(--color-mac-text)] py-0.5 cursor-pointer select-none"
             >
               <input
                 type="radio"
@@ -85,14 +85,14 @@ export default function SidebarFilterMenu({
 
       {/* Filter by status */}
       <div className="px-3 pt-2 pb-2.5">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)] mb-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)] mb-1.5">
           Filter by status
         </p>
         <div className="flex flex-col gap-0.5">
           {STATUS_OPTIONS.map(({ value, label }) => (
             <label
               key={value}
-              className="flex items-center gap-2 text-[12px] text-[var(--color-mac-text)] py-0.5 cursor-pointer select-none"
+              className="flex items-center gap-2 text-[13px] text-[var(--color-mac-text)] py-0.5 cursor-pointer select-none"
             >
               <input
                 type="checkbox"

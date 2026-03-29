@@ -43,8 +43,8 @@ export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
 
   return (
     <div
-      style={{ height: 28, minHeight: 28 }}
-      className="group flex items-center justify-between pl-6 pr-3 text-[13px] select-none text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]"
+      style={{ height: 30, minHeight: 30 }}
+      className="group flex items-center justify-between pl-6 pr-3 text-[14px] select-none text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]"
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <StatusDot status={task.status} onChange={(s) => updateTaskStatus(groupId, task.id, s)} />
@@ -57,7 +57,7 @@ export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
             onKeyDown={handleKeyDown}
             onBlur={commitRename}
             onClick={(e) => e.stopPropagation()}
-            className="flex-1 px-1 py-0 text-[13px] rounded bg-[var(--color-mac-bg)] border border-[var(--color-mac-accent)] text-[var(--color-mac-text)] outline-none"
+            className="flex-1 px-1 py-0 text-[14px] rounded bg-[var(--color-mac-bg)] border border-[var(--color-mac-accent)] text-[var(--color-mac-text)] outline-none"
             style={{ userSelect: 'text' }}
           />
         ) : (

@@ -72,7 +72,7 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
         style={{
           position: 'relative',
           overflow: 'hidden',
-          maxHeight: isCollapsed ? 0 : group.tasks.length * 28 + (addingManual ? 32 : 0) + 4,
+          maxHeight: isCollapsed ? 0 : group.tasks.length * 30 + (addingManual ? 32 : 0) + 4,
           transition: 'max-height 150ms ease-out',
         }}
       >
@@ -83,7 +83,7 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
               position: 'absolute',
               left: 16,
               right: 8,
-              top: dropIndex * 28,
+              top: dropIndex * 30,
               height: 2,
               background: 'var(--color-mac-accent)',
               borderRadius: 1,

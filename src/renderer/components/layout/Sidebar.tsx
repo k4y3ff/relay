@@ -91,28 +91,28 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
       {/* Header */}
       <div
         className="flex-shrink-0 flex items-center px-3 border-b border-[var(--color-mac-border)] relative"
-        style={{ height: 32 }}
+        style={{ height: 34 }}
       >
-        <span className="flex-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)]">
+        <span className="flex-1 text-[12px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)]">
           Task Groups
         </span>
         <button
           onClick={() => setFilterMenuOpen((v) => !v)}
-          className="flex items-center justify-center w-5 h-5 rounded transition-colors"
+          className="flex items-center justify-center w-6 h-6 rounded transition-colors"
           style={{
             color: isFiltered ? 'var(--color-mac-accent)' : 'var(--color-mac-muted)',
           }}
           aria-label="Filter and group options"
         >
-          <Filter size={13} />
+          <Filter size={14} />
         </button>
         <button
           onClick={() => setIsCreating(true)}
           disabled={isCreating}
-          className="flex items-center justify-center w-5 h-5 rounded transition-colors text-[var(--color-mac-muted)] hover:text-[var(--color-mac-text)] disabled:opacity-50"
+          className="flex items-center justify-center w-6 h-6 rounded transition-colors text-[var(--color-mac-muted)] hover:text-[var(--color-mac-text)] disabled:opacity-50"
           aria-label="Add task group"
         >
-          <Plus size={14} />
+          <Plus size={15} />
         </button>
 
         {filterMenuOpen && (
@@ -129,13 +129,13 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
       {/* Task group list */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {loading && (
-          <p className="text-[13px] text-[var(--color-mac-muted)] px-4 py-3">Loading…</p>
+          <p className="text-[14px] text-[var(--color-mac-muted)] px-4 py-3">Loading…</p>
         )}
 
         {groupBy === 'task-group' && (
           <>
             {!loading && filteredTaskGroups.length === 0 && !isCreating && (
-              <p className="text-[13px] text-[var(--color-mac-muted)] text-center px-4 py-3">
+              <p className="text-[14px] text-[var(--color-mac-muted)] text-center px-4 py-3">
                 No task groups. Create one below.
               </p>
             )}
@@ -148,7 +148,7 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
         {groupBy !== 'task-group' && (
           <>
             {!loading && syntheticGroups.length === 0 && (
-              <p className="text-[13px] text-[var(--color-mac-muted)] text-center px-4 py-3">
+              <p className="text-[14px] text-[var(--color-mac-muted)] text-center px-4 py-3">
                 No tasks match.
               </p>
             )}
@@ -156,9 +156,9 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
               <div key={label}>
                 <div
                   className="flex items-center gap-1.5 px-3"
-                  style={{ height: 26 }}
+                  style={{ height: 28 }}
                 >
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)]">
+                  <span className="text-[12px] font-semibold uppercase tracking-widest text-[var(--color-mac-muted)]">
                     {label}
                   </span>
                 </div>
@@ -173,7 +173,7 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
         {/* Inline new group input */}
         {isCreating && (
           <div className="flex items-center gap-1.5 px-3 py-2">
-            <span className="text-[var(--color-mac-muted)] text-[10px] flex-shrink-0">▾</span>
+            <span className="text-[var(--color-mac-muted)] text-[11px] flex-shrink-0">▾</span>
             <input
               ref={inputRef}
               type="text"
@@ -182,7 +182,7 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
               onKeyDown={handleKeyDown}
               onBlur={commitCreate}
               placeholder="Group name"
-              className="flex-1 px-1 py-0 text-[13px] font-medium rounded bg-[var(--color-mac-bg)] border border-[var(--color-mac-accent)] text-[var(--color-mac-text)] outline-none"
+              className="flex-1 px-1 py-0 text-[14px] font-medium rounded bg-[var(--color-mac-bg)] border border-[var(--color-mac-accent)] text-[var(--color-mac-text)] outline-none"
               style={{ userSelect: 'text' }}
             />
           </div>
