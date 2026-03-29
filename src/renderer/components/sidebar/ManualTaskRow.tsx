@@ -10,7 +10,7 @@ interface ManualTaskRowProps {
 }
 
 export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
-  const { removeTask, updateTaskStatus, renameTask } = useRepo();
+  const { removeTask, updateTaskStatus, renameTask, selectManualTask, activeManualTaskId } = useRepo();
   const [renaming, setRenaming] = useState(false);
   const [draftTitle, setDraftTitle] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -41,10 +41,13 @@ export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
     { label: 'Delete', danger: true, action: () => removeTask(groupId, task.id) },
   ];
 
+  const isActive = activeManualTaskId === task.id;
+
   return (
     <div
       style={{ height: 30, minHeight: 30 }}
-      className="group flex items-center justify-between pl-6 pr-3 text-[14px] select-none text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]"
+      className={`group flex items-center justify-between pl-6 pr-3 text-[14px] select-none cursor-default ${isActive ? 'bg-[var(--color-mac-accent)] text-white' : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'}`}
+      onClick={() => { if (!renaming) selectManualTask(task.id); }}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
         <StatusDot status={task.status} onChange={(s) => updateTaskStatus(groupId, task.id, s)} />
@@ -63,7 +66,7 @@ export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
         ) : (
           <span
             className={`truncate cursor-default ${task.status === 'done' ? 'line-through opacity-50' : ''}`}
-            onDoubleClick={() => setRenaming(true)}
+            onDoubleClick={(e) => { e.stopPropagation(); setRenaming(true); }}
           >
             {task.title}
           </span>

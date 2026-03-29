@@ -91,6 +91,7 @@ function hydrateManualTask(persisted: PersistedTask): ManualTask {
     type: 'manual',
     title: persisted.title,
     status: persisted.status,
+    notes: persisted.notes,
   };
 }
 
@@ -336,6 +337,22 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
         )
       );
       return { id: newTask.id, type: 'manual', title, status: 'todo' };
+    }
+  );
+
+  // taskgroups:update-task-notes — persist notes for a manual task
+  ipcMain.handle(
+    'taskgroups:update-task-notes',
+    (_event, { groupId, taskId, notes }: { groupId: string; taskId: string; notes: string }): void => {
+      const existing = store.get('taskGroups');
+      store.set(
+        'taskGroups',
+        existing.map((g) =>
+          g.id === groupId
+            ? { ...g, tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, notes } : t)) }
+            : g
+        )
+      );
     }
   );
 

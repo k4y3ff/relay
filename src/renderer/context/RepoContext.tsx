@@ -6,6 +6,7 @@ import type { TaskGroup, Task, BranchTask, ManualTask, TaskStatus, ChangedFile }
 interface TaskGroupState {
   taskGroups: TaskGroup[];
   activeWorktreePath: string | null;
+  activeManualTaskId: string | null;
   diffTabs: ChangedFile[];
   activePaneTab: 'chat' | string;
   collapsedGroups: Set<string>;
@@ -24,6 +25,8 @@ type Action =
   | { type: 'RENAME_TASK'; groupId: string; taskId: string; title: string }
   | { type: 'MOVE_TASK'; fromGroupId: string; taskId: string; toGroupId: string; insertIndex: number }
   | { type: 'SELECT_WORKTREE'; path: string | null }
+  | { type: 'SELECT_MANUAL_TASK'; taskId: string }
+  | { type: 'UPDATE_TASK_NOTES'; groupId: string; taskId: string; notes: string }
   | { type: 'OPEN_DIFF_TAB'; file: ChangedFile }
   | { type: 'CLOSE_DIFF_TAB'; filePath: string }
   | { type: 'SELECT_PANE_TAB'; tabId: string }
@@ -38,8 +41,15 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
       return { ...state, taskGroups: action.taskGroups, loading: false };
     case 'ADD_TASK_GROUP':
       return { ...state, taskGroups: [...state.taskGroups, action.group] };
-    case 'REMOVE_TASK_GROUP':
-      return { ...state, taskGroups: state.taskGroups.filter((g) => g.id !== action.groupId) };
+    case 'REMOVE_TASK_GROUP': {
+      const removedGroup = state.taskGroups.find((g) => g.id === action.groupId);
+      const groupHadActiveTask = removedGroup?.tasks.some((t) => t.id === state.activeManualTaskId) ?? false;
+      return {
+        ...state,
+        taskGroups: state.taskGroups.filter((g) => g.id !== action.groupId),
+        activeManualTaskId: groupHadActiveTask ? null : state.activeManualTaskId,
+      };
+    }
     case 'RENAME_TASK_GROUP':
       return {
         ...state,
@@ -70,6 +80,8 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
         ),
         activeWorktreePath:
           removedPath && state.activeWorktreePath === removedPath ? null : state.activeWorktreePath,
+        activeManualTaskId:
+          state.activeManualTaskId === action.taskId ? null : state.activeManualTaskId,
       };
     }
     case 'UPDATE_TASK_STATUS':
@@ -126,7 +138,18 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
       }
     }
     case 'SELECT_WORKTREE':
-      return { ...state, activeWorktreePath: action.path, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
+      return { ...state, activeWorktreePath: action.path, activeManualTaskId: null, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
+    case 'SELECT_MANUAL_TASK':
+      return { ...state, activeManualTaskId: action.taskId, activeWorktreePath: null, diffTabs: [], activePaneTab: 'chat', dirtyTabs: new Set() };
+    case 'UPDATE_TASK_NOTES':
+      return {
+        ...state,
+        taskGroups: state.taskGroups.map((g) =>
+          g.id === action.groupId
+            ? { ...g, tasks: g.tasks.map((t) => t.id === action.taskId ? { ...t, notes: action.notes } : t) }
+            : g
+        ),
+      };
     case 'OPEN_DIFF_TAB': {
       const already = state.diffTabs.some((t) => t.path === action.file.path);
       return {
@@ -174,6 +197,7 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
 const initialState: TaskGroupState = {
   taskGroups: [],
   activeWorktreePath: null,
+  activeManualTaskId: null,
   diffTabs: [],
   activePaneTab: 'chat',
   collapsedGroups: new Set(),
@@ -194,6 +218,8 @@ interface TaskGroupContextValue extends TaskGroupState {
   renameTask: (groupId: string, taskId: string, title: string) => Promise<void>;
   moveTask: (fromGroupId: string, taskId: string, toGroupId: string, insertIndex: number) => Promise<void>;
   selectWorktree: (path: string) => void;
+  selectManualTask: (taskId: string) => void;
+  updateTaskNotes: (groupId: string, taskId: string, notes: string) => Promise<void>;
   openDiffTab: (file: ChangedFile) => void;
   closeDiffTab: (filePath: string) => void;
   selectPaneTab: (tabId: string) => void;
@@ -285,6 +311,15 @@ export function RepoProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SELECT_WORKTREE', path });
   }, []);
 
+  const selectManualTask = useCallback((taskId: string) => {
+    dispatch({ type: 'SELECT_MANUAL_TASK', taskId });
+  }, []);
+
+  const updateTaskNotes = useCallback(async (groupId: string, taskId: string, notes: string) => {
+    await window.relay.invoke('taskgroups:update-task-notes', { groupId, taskId, notes });
+    dispatch({ type: 'UPDATE_TASK_NOTES', groupId, taskId, notes });
+  }, []);
+
   const openDiffTab = useCallback((file: ChangedFile) => {
     dispatch({ type: 'OPEN_DIFF_TAB', file });
   }, []);
@@ -323,6 +358,8 @@ export function RepoProvider({ children }: { children: ReactNode }) {
         renameTask,
         moveTask,
         selectWorktree,
+        selectManualTask,
+        updateTaskNotes,
         openDiffTab,
         closeDiffTab,
         selectPaneTab,

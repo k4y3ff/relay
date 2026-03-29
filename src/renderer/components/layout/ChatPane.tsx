@@ -3,6 +3,8 @@ import { useRepo } from '../../context/RepoContext';
 import TerminalEmbed from '../chat/TerminalEmbed';
 import DiffViewer from '../chat/DiffViewer';
 import FileViewer from '../chat/FileViewer';
+import ManualTaskNotesPane from './ManualTaskNotesPane';
+import type { ManualTask } from '../../types/repo';
 
 function basename(filePath: string): string {
   return filePath.split('/').pop() ?? filePath;
@@ -16,7 +18,21 @@ interface MountedTerminal {
 }
 
 export default function ChatPane() {
-  const { activeWorktreePath, diffTabs, activePaneTab, dirtyTabs, closeDiffTab, selectPaneTab } = useRepo();
+  const { activeWorktreePath, activeManualTaskId, taskGroups, diffTabs, activePaneTab, dirtyTabs, closeDiffTab, selectPaneTab } = useRepo();
+
+  // Find the active manual task and its group
+  let activeManualTask: ManualTask | null = null;
+  let activeManualTaskGroupId: string | null = null;
+  if (activeManualTaskId) {
+    for (const g of taskGroups) {
+      const t = g.tasks.find((t) => t.id === activeManualTaskId);
+      if (t && t.type === 'manual') {
+        activeManualTask = t;
+        activeManualTaskGroupId = g.id;
+        break;
+      }
+    }
+  }
 
   // Map from worktreePath → ordered array of terminalIds
   const [chatTabsByPath, setChatTabsByPath] = useState<Map<string, string[]>>(new Map());
@@ -145,7 +161,10 @@ export default function ChatPane() {
 
   return (
     <div className="chat-pane">
-      {!activeWorktreePath && (
+      {activeManualTask && activeManualTaskGroupId && (
+        <ManualTaskNotesPane groupId={activeManualTaskGroupId} task={activeManualTask} />
+      )}
+      {!activeWorktreePath && !activeManualTask && (
         <div className="pane-placeholder">Select a worktree to start chatting</div>
       )}
       {activeWorktreePath && (
