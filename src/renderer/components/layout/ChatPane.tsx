@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRepo } from '../../context/RepoContext';
 import TerminalEmbed from '../chat/TerminalEmbed';
 import DiffViewer from '../chat/DiffViewer';
@@ -7,6 +7,8 @@ import FileViewer from '../chat/FileViewer';
 function basename(filePath: string): string {
   return filePath.split('/').pop() ?? filePath;
 }
+
+const CHAT_TAB_MENU_ID = 'chat-tab-context-menu';
 
 interface MountedTerminal {
   id: string;
@@ -22,6 +24,14 @@ export default function ChatPane() {
   const [activeChatTabByPath, setActiveChatTabByPath] = useState<Map<string, string>>(new Map());
   // All ever-mounted terminals (never removed, keeps PTYs alive)
   const [mountedTerminals, setMountedTerminals] = useState<MountedTerminal[]>([]);
+  // Custom labels for non-first chat tabs (terminalId → label)
+  const [chatTabLabels, setChatTabLabels] = useState<Map<string, string>>(new Map());
+  // Tracks which tab is currently being renamed inline
+  const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  // Tracks which tab was right-clicked, for the context menu handler
+  const contextTabRef = useRef<string | null>(null);
 
   // When the active worktree changes, ensure it has at least one chat tab
   useEffect(() => {
@@ -52,6 +62,48 @@ export default function ChatPane() {
       window.dispatchEvent(new CustomEvent('terminal:refit'));
     }
   }, [activePaneTab]);
+
+  // Handle context menu actions for non-first chat tabs
+  useEffect(() => {
+    return window.relay.on('menu:item-clicked', (data: unknown) => {
+      const { menuId, itemIndex } = data as { menuId: string; itemIndex: number };
+      if (menuId !== CHAT_TAB_MENU_ID) return;
+      const tabId = contextTabRef.current;
+      if (!tabId) return;
+      if (itemIndex === 0) {
+        const current = chatTabLabels.get(tabId) ?? '';
+        setRenameValue(current);
+        setRenamingTabId(tabId);
+      }
+      contextTabRef.current = null;
+    });
+  }, [chatTabLabels]);
+
+  // Focus the rename input once it mounts
+  useEffect(() => {
+    if (renamingTabId && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renamingTabId]);
+
+  const commitRename = useCallback(() => {
+    if (renamingTabId) {
+      if (renameValue.trim()) {
+        setChatTabLabels((prev) => new Map(prev).set(renamingTabId, renameValue.trim()));
+      }
+      setRenamingTabId(null);
+    }
+  }, [renamingTabId, renameValue]);
+
+  const handleChatTabContextMenu = useCallback((e: React.MouseEvent, tabId: string) => {
+    e.preventDefault();
+    contextTabRef.current = tabId;
+    void window.relay.invoke('menu:show-context-menu', {
+      menuId: CHAT_TAB_MENU_ID,
+      items: [{ label: 'Rename' }],
+    });
+  }, []);
 
   const addChatTab = useCallback((worktreePath: string) => {
     const newId = worktreePath + ':' + Date.now();
@@ -110,8 +162,25 @@ export default function ChatPane() {
                 });
                 selectPaneTab('chat');
               }}
+              onContextMenu={idx > 0 ? (e) => handleChatTabContextMenu(e, tabId) : undefined}
             >
-              {idx === 0 ? 'Chat' : `Chat ${idx + 1}`}
+              {renamingTabId === tabId ? (
+                <input
+                  ref={renameInputRef}
+                  className="chat-tab-rename-input"
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') commitRename();
+                    if (e.key === 'Escape') setRenamingTabId(null);
+                    e.stopPropagation();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                idx === 0 ? 'Chat' : (chatTabLabels.get(tabId) ?? `Chat ${idx + 1}`)
+              )}
               {idx > 0 && (
                 <span
                   className="chat-tab-close"
