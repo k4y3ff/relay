@@ -553,13 +553,17 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     }
   );
 
-  // git:all-files — list all tracked files in the worktree
+  // git:all-files — list all tracked and untracked (non-ignored) files in the worktree
   ipcMain.handle(
     'git:all-files',
     async (_event, { worktreePath }: { worktreePath: string }): Promise<string[]> => {
-      const { stdout } = await execFileAsync('git', ['ls-files'], { cwd: worktreePath })
-        .catch(() => ({ stdout: '' }));
-      return stdout.trim().split('\n').filter(Boolean);
+      const [trackedResult, untrackedResult] = await Promise.all([
+        execFileAsync('git', ['ls-files'], { cwd: worktreePath }).catch(() => ({ stdout: '' })),
+        execFileAsync('git', ['ls-files', '--others', '--exclude-standard'], { cwd: worktreePath }).catch(() => ({ stdout: '' })),
+      ]);
+      const tracked = trackedResult.stdout.trim().split('\n').filter(Boolean);
+      const untracked = untrackedResult.stdout.trim().split('\n').filter(Boolean);
+      return [...new Set([...tracked, ...untracked])];
     }
   );
 
