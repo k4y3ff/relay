@@ -23,6 +23,7 @@ export interface ManualTask {
   type: 'manual';
   title: string;
   status: TaskStatus;
+  notes?: string;
 }
 
 export type Task = BranchTask | ManualTask;
@@ -41,6 +42,7 @@ export interface PersistedTask {
   title: string;
   repoRootPath?: string;  // branch tasks only
   worktreePath?: string;  // branch tasks only
+  notes?: string;         // manual tasks only
 }
 
 export interface PersistedTaskGroup {
