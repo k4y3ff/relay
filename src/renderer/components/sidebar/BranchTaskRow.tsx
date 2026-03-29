@@ -3,6 +3,7 @@ import type { BranchTask, ChangedFile } from '../../types/repo';
 import { useRepo } from '../../context/RepoContext';
 import OverflowMenu from './OverflowMenu';
 import StatusDot from './StatusDot';
+import SparkleIndicator from './SparkleIndicator';
 
 interface BranchTaskRowProps {
   groupId: string;
@@ -10,8 +11,9 @@ interface BranchTaskRowProps {
 }
 
 export default function BranchTaskRow({ groupId, task }: BranchTaskRowProps) {
-  const { activeWorktreePath, selectWorktree, removeTask, updateTaskStatus } = useRepo();
+  const { activeWorktreePath, runningWorktreePaths, selectWorktree, removeTask, updateTaskStatus } = useRepo();
   const isActive = activeWorktreePath === task.worktree.path;
+  const isRunning = runningWorktreePaths.has(task.worktree.path);
   const [stats, setStats] = useState<{ added: number; deleted: number; fileCount: number } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -63,7 +65,10 @@ export default function BranchTaskRow({ groupId, task }: BranchTaskRowProps) {
       }`}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
-        <StatusDot status={task.status} onChange={(s) => updateTaskStatus(groupId, task.id, s)} />
+        {isRunning
+          ? <SparkleIndicator />
+          : <StatusDot status={task.status} onChange={(s) => updateTaskStatus(groupId, task.id, s)} />
+        }
         <span className="truncate">{task.repoName} / {task.worktree.branch}</span>
       </div>
       <div className="relative shrink-0 w-5 flex items-center justify-end">

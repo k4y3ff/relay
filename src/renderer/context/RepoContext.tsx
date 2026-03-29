@@ -11,6 +11,7 @@ interface TaskGroupState {
   activePaneTab: 'chat' | string;
   collapsedGroups: Set<string>;
   dirtyTabs: Set<string>;
+  runningWorktreePaths: Set<string>;
   loading: boolean;
 }
 
@@ -33,7 +34,9 @@ type Action =
   | { type: 'TOGGLE_COLLAPSED'; groupId: string }
   | { type: 'SET_LOADING'; loading: boolean }
   | { type: 'MARK_TAB_DIRTY'; filePath: string }
-  | { type: 'MARK_TAB_CLEAN'; filePath: string };
+  | { type: 'MARK_TAB_CLEAN'; filePath: string }
+  | { type: 'CLAUDE_RUNNING'; worktreePath: string }
+  | { type: 'CLAUDE_DONE'; worktreePath: string };
 
 function reducer(state: TaskGroupState, action: Action): TaskGroupState {
   switch (action.type) {
@@ -189,6 +192,16 @@ function reducer(state: TaskGroupState, action: Action): TaskGroupState {
     }
     case 'SET_LOADING':
       return { ...state, loading: action.loading };
+    case 'CLAUDE_RUNNING': {
+      const next = new Set(state.runningWorktreePaths);
+      next.add(action.worktreePath);
+      return { ...state, runningWorktreePaths: next };
+    }
+    case 'CLAUDE_DONE': {
+      const next = new Set(state.runningWorktreePaths);
+      next.delete(action.worktreePath);
+      return { ...state, runningWorktreePaths: next };
+    }
     default:
       return state;
   }
@@ -202,6 +215,7 @@ const initialState: TaskGroupState = {
   activePaneTab: 'chat',
   collapsedGroups: new Set(),
   dirtyTabs: new Set(),
+  runningWorktreePaths: new Set(),
   loading: true,
 };
 
@@ -247,6 +261,18 @@ export function RepoProvider({ children }: { children: ReactNode }) {
       const { worktreePath } = payload as { worktreePath: string };
       dispatch({ type: 'SELECT_WORKTREE', path: worktreePath });
     });
+  }, []);
+
+  useEffect(() => {
+    const offStart = window.relay.on('response:start', (payload) => {
+      const { worktreePath } = payload as { worktreePath: string };
+      dispatch({ type: 'CLAUDE_RUNNING', worktreePath });
+    });
+    const offDone = window.relay.on('response:complete', (payload) => {
+      const { worktreePath } = payload as { worktreePath: string };
+      dispatch({ type: 'CLAUDE_DONE', worktreePath });
+    });
+    return () => { offStart(); offDone(); };
   }, []);
 
   const createTaskGroup = useCallback(async (name: string): Promise<TaskGroup> => {
