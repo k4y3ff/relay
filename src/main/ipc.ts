@@ -230,6 +230,14 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('powerModeEnabled', enabled);
   });
 
+  // settings:get-app-theme — return the saved app theme name
+  ipcMain.handle('settings:get-app-theme', (): string => store.get('appTheme'));
+
+  // settings:set-app-theme — persist the app theme preference
+  ipcMain.handle('settings:set-app-theme', (_event, { theme }: { theme: string }): void => {
+    store.set('appTheme', theme);
+  });
+
   // settings:get-editor-theme — return the saved editor theme id
   ipcMain.handle('settings:get-editor-theme', (): string => store.get('editorTheme'));
 

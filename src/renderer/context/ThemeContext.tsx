@@ -1,6 +1,17 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { AppTheme, AppThemeColors } from '../themes/types';
-import { DEFAULT_THEME } from '../themes';
+import { DEFAULT_THEME, THEMES } from '../themes';
+
+const THEME_STORAGE_KEY = 'relay:app-theme';
+
+function getInitialTheme(): AppTheme {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY);
+    return THEMES[saved ?? ''] ?? DEFAULT_THEME;
+  } catch {
+    return DEFAULT_THEME;
+  }
+}
 
 // ── CSS variable derivation ──────────────────────────────────────────────────
 
@@ -88,14 +99,35 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<AppTheme>(DEFAULT_THEME);
+  const [theme, setThemeState] = useState<AppTheme>(getInitialTheme);
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
+  // One-time sync: if localStorage was empty on this load, fetch from electron-store
+  // and populate it so future loads skip the async call entirely.
+  useEffect(() => {
+    if (localStorage.getItem(THEME_STORAGE_KEY) !== null) return;
+    window.relay.invoke('settings:get-app-theme').then((name) => {
+      const t = THEMES[name as string] ?? DEFAULT_THEME;
+      try { localStorage.setItem(THEME_STORAGE_KEY, t.name); } catch { /* ignore */ }
+      if (t.name !== theme.name) {
+        setThemeState(t);
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const setTheme = useCallback((t: AppTheme) => {
+    setThemeState(t);
+    try { localStorage.setItem(THEME_STORAGE_KEY, t.name); } catch { /* ignore */ }
+    window.relay.invoke('settings:set-app-theme', { theme: t.name });
+  }, []);
+
+  const contextValue = useMemo(() => ({ theme, setTheme }), [theme, setTheme]);
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
