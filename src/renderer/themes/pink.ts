@@ -26,8 +26,8 @@ export const pinkTheme: AppTheme = {
     // Per-area backgrounds
     titlebarBg: 'rgba(175, 28, 110, 0.95)',
     sidebarBg: 'rgba(194, 36, 127, 0.93)',
-    chatPaneBg: 'rgba(180, 32, 118, 0.95)',
-    rightColumnBg: 'rgba(180, 32, 118, 0.95)',
+    chatPaneBg: 'rgba(148, 22, 96, 0.95)',
+    rightColumnBg: 'rgba(148, 22, 96, 0.95)',
 
     // Diff viewer
     diffAdded: '#4ade80',
@@ -53,12 +53,12 @@ export const pinkTheme: AppTheme = {
     statusDone: '#4ade80',
   },
   terminal: {
-    background: '#c2247f',
+    background: '#a01e68',
     foreground: '#fff0f8',
     cursor: '#ffe0f2',
-    cursorAccent: '#c2247f',
+    cursorAccent: '#a01e68',
     selectionBackground: 'rgba(255, 224, 242, 0.30)',
-    black: '#c2247f',
+    black: '#a01e68',
     red: '#fda4af',
     green: '#4ade80',
     yellow: '#facc15',
