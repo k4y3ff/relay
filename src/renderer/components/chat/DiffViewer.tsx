@@ -13,9 +13,10 @@ interface Props {
   chatTabs: string[];
   activeChatTabId: string;
   chatTabLabels: Map<string, string>;
+  onOpenChat: (tabId: string) => void;
 }
 
-export default function DiffViewer({ worktreePath, filePath, status, added, deleted, chatTabs, activeChatTabId, chatTabLabels }: Props) {
+export default function DiffViewer({ worktreePath, filePath, status, added, deleted, chatTabs, activeChatTabId, chatTabLabels, onOpenChat }: Props) {
   const [diffHtml, setDiffHtml] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +99,8 @@ export default function DiffViewer({ worktreePath, filePath, status, added, dele
     const message = `The ${filePath} file says:\n\n${selectedText}\n\n`;
     void window.relay.invoke('terminal:write', { terminalId: toolbarTargetTabId, data: message });
     setSelectedText('');
-  }, [selectedText, toolbarTargetTabId, filePath]);
+    onOpenChat(toolbarTargetTabId);
+  }, [selectedText, toolbarTargetTabId, filePath, onOpenChat]);
 
   return (
     <div className="diff-viewer">

@@ -260,6 +260,14 @@ export default function ChatPane() {
           chatTabs={activeChatTabs}
           activeChatTabId={activeChatTabId}
           chatTabLabels={chatTabLabels}
+          onOpenChat={(tabId) => {
+            setActiveChatTabByPath((prev) => {
+              const next = new Map(prev);
+              next.set(activeWorktreePath, tabId);
+              return next;
+            });
+            selectPaneTab('chat');
+          }}
         />
       )}
     </div>
