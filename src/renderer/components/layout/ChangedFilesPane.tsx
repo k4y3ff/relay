@@ -1,5 +1,5 @@
 import { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
-import { ChevronRight, ChevronDown, Folder, FolderOpen } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, FolderOpen, Search, X } from 'lucide-react';
 import { useRepo } from '../../context/RepoContext';
 import type { ChangedFile } from '../../types/repo';
 
@@ -114,6 +114,8 @@ export default function ChangedFilesPane({ style }: Props) {
   const [allFiles, setAllFiles] = useState<string[]>([]);
   const [expandedDirs, setExpandedDirs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchFiles = useCallback(async () => {
@@ -181,23 +183,60 @@ export default function ChangedFilesPane({ style }: Props) {
 
   const handleRefresh = view === 'changes' ? fetchFiles : fetchAllFiles;
 
+  const closeSearch = useCallback(() => {
+    setIsSearching(false);
+    setSearchQuery('');
+  }, []);
+
+  const filteredFiles = searchQuery
+    ? allFiles.filter(p => {
+        const lower = searchQuery.toLowerCase();
+        const filename = p.split('/').pop() ?? '';
+        return filename.toLowerCase().includes(lower) || p.toLowerCase().includes(lower);
+      })
+    : allFiles;
+
   return (
     <div style={style} className="changed-files-pane">
       <div className="changed-files-header">
-        <div className="files-tabs">
+        {isSearching && view === 'all' ? (
+          <input
+            className="all-files-search-input"
+            autoFocus
+            placeholder="Search files..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Escape') closeSearch(); }}
+          />
+        ) : (
+          <div className="files-tabs">
+            <button
+              className={`files-tab${view === 'all' ? ' files-tab-active' : ''}`}
+              onClick={() => setView('all')}
+            >
+              All Files
+            </button>
+            <button
+              className={`files-tab${view === 'changes' ? ' files-tab-active' : ''}`}
+              onClick={() => setView('changes')}
+            >
+              Changes{files.length > 0 ? ` ${files.length}` : ''}
+            </button>
+          </div>
+        )}
+        {view === 'all' && (
           <button
-            className={`files-tab${view === 'all' ? ' files-tab-active' : ''}`}
-            onClick={() => setView('all')}
+            className="changed-files-refresh"
+            onClick={() => {
+              if (isSearching) closeSearch();
+              else setIsSearching(true);
+            }}
+            disabled={!activeWorktreePath}
+            title={isSearching ? 'Close search' : 'Search files'}
           >
-            All Files
+            {isSearching ? <X size={12} /> : <Search size={12} />}
           </button>
-          <button
-            className={`files-tab${view === 'changes' ? ' files-tab-active' : ''}`}
-            onClick={() => setView('changes')}
-          >
-            Changes{files.length > 0 ? ` ${files.length}` : ''}
-          </button>
-        </div>
+        )}
         <button
           className="changed-files-refresh"
           onClick={handleRefresh}
@@ -214,6 +253,21 @@ export default function ChangedFilesPane({ style }: Props) {
         ) : view === 'all' ? (
           allFiles.length === 0 && !loading ? (
             <div className="changed-files-empty">No files found</div>
+          ) : searchQuery ? (
+            filteredFiles.length === 0 ? (
+              <div className="changed-files-empty">No files match</div>
+            ) : (
+              filteredFiles.map(p => (
+                <button
+                  key={p}
+                  className={`all-files-search-result${activePaneTab === p ? ' changed-files-row-active' : ''}`}
+                  title={p}
+                  onClick={() => openDiffTab({ path: p, status: 'R', added: 0, deleted: 0 })}
+                >
+                  {p}
+                </button>
+              ))
+            )
           ) : (
             buildTree(allFiles).map(node => (
               <FileTreeNode
