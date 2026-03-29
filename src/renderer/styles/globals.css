@@ -1,13 +1,58 @@
 @import "tailwindcss";
 
+/* ── Theme tokens ───────────────────────────────────────────── */
+/* These are declared here so Tailwind can generate utility classes.
+   Actual values are injected at runtime by ThemeProvider via JS.
+   To create a new theme, add a file in src/renderer/themes/ and
+   pass it to setTheme() from useTheme(). */
+
 @theme {
-  --color-mac-bg:       #1e1e1e;
-  --color-mac-surface:  #252525;
-  --color-mac-surface2: #2d2d2d;
-  --color-mac-border:   rgba(255, 255, 255, 0.08);
-  --color-mac-text:     #e8e8e8;
-  --color-mac-muted:    #9a9a9a;
-  --color-mac-accent:   #0a84ff;
+  /* Core palette — legacy names kept for Tailwind utility compat */
+  --color-mac-bg:       initial;
+  --color-mac-surface:  initial;
+  --color-mac-surface2: initial;
+  --color-mac-border:   initial;
+  --color-mac-text:     initial;
+  --color-mac-muted:    initial;
+  --color-mac-accent:   initial;
+
+  /* Semantic tokens */
+  --color-bg:                   initial;
+  --color-surface:              initial;
+  --color-surface2:             initial;
+  --color-border:               initial;
+  --color-text:                 initial;
+  --color-text-secondary:       initial;
+  --color-accent:               initial;
+  --color-accent-hover:         initial;
+  --color-accent-row-active:    initial;
+  --color-accent-overlay:       initial;
+  --color-focus-ring:           initial;
+  --color-titlebar-bg:          initial;
+  --color-sidebar-bg:           initial;
+  --color-chat-pane-bg:         initial;
+  --color-right-column-bg:      initial;
+  --color-hover-overlay:        initial;
+  --color-hover-overlay-strong: initial;
+  --color-scrollbar-thumb:      initial;
+  --color-scrollbar-thumb-hover: initial;
+  --color-diff-added:           initial;
+  --color-diff-added-text:      initial;
+  --color-diff-added-bg:        initial;
+  --color-diff-added-line-bg:   initial;
+  --color-diff-added-highlight: initial;
+  --color-diff-deleted:         initial;
+  --color-diff-deleted-text:    initial;
+  --color-diff-deleted-bg:      initial;
+  --color-diff-deleted-line-bg: initial;
+  --color-diff-deleted-highlight: initial;
+  --color-diff-info-bg:         initial;
+  --color-diff-info-line-bg:    initial;
+  --color-error:                initial;
+  --color-status-todo:          initial;
+  --color-status-in-progress:   initial;
+  --color-status-blocked:       initial;
+  --color-status-done:          initial;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "SF Mono", ui-monospace, "Cascadia Code", monospace;
@@ -27,7 +72,7 @@
   }
 
   :focus-visible {
-    outline: 2px solid rgba(0, 122, 255, 0.7);
+    outline: 2px solid var(--color-focus-ring);
     outline-offset: 2px;
     border-radius: 4px;
   }
@@ -57,17 +102,17 @@ body,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: var(--color-scrollbar-thumb);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: var(--color-scrollbar-thumb-hover);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
 }
 
 /* ── Global transition speed ───────────────────────────────── */
@@ -90,7 +135,7 @@ body,
   height: 44px;
   flex-shrink: 0;
   -webkit-app-region: drag;
-  background: rgba(28, 28, 28, 0.95);
+  background: var(--color-titlebar-bg);
 }
 
 /* Panel row fills remaining height */
@@ -107,7 +152,7 @@ body,
   flex-shrink: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  background: rgba(32, 32, 32, 0.93);
+  background: var(--color-sidebar-bg);
 }
 
 /* ── Center pane ───────────────────────────────────────────── */
@@ -116,7 +161,7 @@ body,
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  background: rgba(30, 30, 30, 0.95);
+  background: var(--color-chat-pane-bg);
   display: flex;
   flex-direction: column;
 }
@@ -143,7 +188,7 @@ body,
   padding: 0 12px;
   height: 32px;
   font-size: 12px;
-  color: var(--color-mac-text-secondary);
+  color: var(--color-text-secondary);
   background: none;
   border: none;
   cursor: pointer;
@@ -153,17 +198,17 @@ body,
 
 .chat-tab:hover {
   color: var(--color-mac-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-hover-overlay);
 }
 
 .chat-tab.chat-tab-active {
   color: var(--color-mac-text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-hover-overlay-strong);
   box-shadow: inset 0 -2px 0 var(--color-mac-accent);
 }
 
 .chat-tab-rename-input {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-hover-overlay-strong);
   border: 1px solid var(--color-mac-accent);
   border-radius: 3px;
   color: var(--color-mac-text);
@@ -181,7 +226,7 @@ body,
   height: 14px;
   font-size: 14px;
   line-height: 1;
-  color: var(--color-mac-text-secondary);
+  color: var(--color-text-secondary);
   border-radius: 3px;
   cursor: pointer;
 }
@@ -191,7 +236,7 @@ body,
 }
 
 .chat-tab-close:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--color-hover-overlay-strong);
   color: var(--color-mac-text);
 }
 
@@ -202,20 +247,20 @@ body,
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(30, 30, 30, 0.95);
+  background: var(--color-right-column-bg);
 }
 
 /* ── Dividers ──────────────────────────────────────────────── */
 
 .divider-v {
   width: 1px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-overlay);
   flex-shrink: 0;
 }
 
 .divider-h {
   height: 1px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-overlay);
   flex-shrink: 0;
 }
 
@@ -232,12 +277,12 @@ body,
   content: '';
   position: absolute;
   inset: 2px 0;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-overlay);
   transition: background 100ms ease-out;
 }
 
 .divider-h.resize-handle:hover::after {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-hover-overlay-strong);
 }
 
 /* Resize handle: wider hit target, visible 1px line via ::after */
@@ -253,18 +298,18 @@ body,
   content: '';
   position: absolute;
   inset: 0 2px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-overlay);
   transition: background 100ms ease-out;
 }
 
 .divider-v.resize-handle:hover::after {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--color-hover-overlay-strong);
 }
 
 /* ── Sidebar ───────────────────────────────────────────────── */
 
 .worktree-row-active {
-  background: rgba(0, 122, 255, 0.25);
+  background: var(--color-accent-row-active);
   border-radius: 6px;
   margin: 0 6px;
   padding-left: calc(1.5rem - 6px);
@@ -316,43 +361,43 @@ body,
 
 /* Deletion cells */
 .diff-content td.d2h-del {
-  background-color: rgba(239, 68, 68, 0.13) !important;
-  color: #fca5a5;
+  background-color: var(--color-diff-deleted-bg) !important;
+  color: var(--color-diff-deleted-text);
 }
 .diff-content td.d2h-code-linenumber.d2h-del {
-  background-color: rgba(239, 68, 68, 0.22) !important;
-  color: #f87171;
+  background-color: var(--color-diff-deleted-line-bg) !important;
+  color: var(--color-diff-deleted);
 }
 
 /* Insertion cells */
 .diff-content td.d2h-ins {
-  background-color: rgba(74, 222, 128, 0.10) !important;
-  color: #bbf7d0;
+  background-color: var(--color-diff-added-bg) !important;
+  color: var(--color-diff-added-text);
 }
 .diff-content td.d2h-code-linenumber.d2h-ins {
-  background-color: rgba(74, 222, 128, 0.17) !important;
-  color: #4ade80;
+  background-color: var(--color-diff-added-line-bg) !important;
+  color: var(--color-diff-added);
 }
 
 /* Hunk header cells */
 .diff-content td.d2h-info {
-  background-color: rgba(10, 132, 255, 0.08) !important;
+  background-color: var(--color-diff-info-bg) !important;
   color: var(--color-mac-muted);
   font-style: italic;
 }
 .diff-content td.d2h-code-linenumber.d2h-info {
-  background-color: rgba(10, 132, 255, 0.13) !important;
+  background-color: var(--color-diff-info-line-bg) !important;
 }
 
 /* Inline character highlights */
 .diff-content .d2h-code-line del,
 .diff-content .d2h-code-side-line del {
-  background-color: rgba(239, 68, 68, 0.40);
+  background-color: var(--color-diff-deleted-highlight);
   text-decoration: none;
 }
 .diff-content .d2h-code-line ins,
 .diff-content .d2h-code-side-line ins {
-  background-color: rgba(74, 222, 128, 0.32);
+  background-color: var(--color-diff-added-highlight);
   text-decoration: none;
 }
 
@@ -425,7 +470,7 @@ body,
 
 .changed-files-refresh:hover:not(:disabled) {
   color: var(--color-mac-text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-hover-overlay-strong);
 }
 
 .changed-files-refresh:disabled {
@@ -437,7 +482,7 @@ body,
   flex: 1;
   background: none;
   border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--color-hover-overlay-strong);
   color: var(--color-mac-text);
   font-size: 12px;
   padding: 2px 4px;
@@ -468,11 +513,11 @@ body,
 }
 
 .all-files-search-result:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-overlay);
 }
 
 .all-files-search-result.changed-files-row-active {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-hover-overlay-strong);
 }
 
 .changed-files-list {
@@ -511,11 +556,11 @@ body,
 }
 
 .changed-files-row:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-hover-overlay);
 }
 
 .changed-files-row-active {
-  background: rgba(0, 122, 255, 0.22);
+  background: var(--color-accent-row-active);
   border-radius: 6px;
   margin: 0 6px;
   padding-left: 4px;
@@ -542,11 +587,11 @@ body,
 }
 
 .changed-files-added {
-  color: #4ade80;
+  color: var(--color-diff-added);
 }
 
 .changed-files-deleted {
-  color: #f87171;
+  color: var(--color-diff-deleted);
 }
 
 .all-files-row {
@@ -567,11 +612,11 @@ body,
 }
 
 .all-files-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-hover-overlay);
 }
 
 .all-files-row.changed-files-row-active {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-hover-overlay-strong);
 }
 
 .all-files-dir-row {
@@ -592,7 +637,7 @@ body,
 }
 
 .all-files-dir-row:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-hover-overlay);
   color: var(--color-mac-text);
 }
 
@@ -645,7 +690,7 @@ body,
 }
 
 .diff-back-btn:hover {
-  background: rgba(10, 132, 255, 0.12);
+  background: var(--color-accent-overlay);
 }
 
 .diff-filepath {
@@ -665,11 +710,11 @@ body,
 }
 
 .diff-added {
-  color: #4ade80;
+  color: var(--color-diff-added);
 }
 
 .diff-deleted {
-  color: #f87171;
+  color: var(--color-diff-deleted);
 }
 
 .diff-viewer-body {
@@ -719,7 +764,7 @@ body,
 }
 
 .diff-add-to-chat-btn:hover {
-  background: #2196ff;
+  background: var(--color-accent-hover);
 }
 
 .file-editor-body {
@@ -752,7 +797,7 @@ body,
 }
 
 .file-editor-save-btn:hover {
-  background: #2196ff;
+  background: var(--color-accent-hover);
 }
 
 .chat-tab-new {
@@ -802,7 +847,7 @@ body,
 }
 
 .diff-error {
-  color: #f87171;
+  color: var(--color-error);
 }
 
 .diff-empty {
@@ -865,7 +910,7 @@ body,
 
 .shell-clear-btn:hover {
   color: var(--color-mac-text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-hover-overlay-strong);
 }
 
 .shell-tab-bar {
@@ -900,12 +945,12 @@ body,
 
 .shell-tab:hover {
   color: var(--color-mac-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--color-hover-overlay);
 }
 
 .shell-tab.shell-tab-active {
   color: var(--color-mac-text);
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-hover-overlay-strong);
   box-shadow: inset 0 -2px 0 var(--color-mac-accent);
 }
 
@@ -938,7 +983,7 @@ body,
 
 .shell-tab-close:hover:not(:disabled) {
   color: var(--color-mac-text);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--color-hover-overlay-strong);
 }
 
 .shell-tab-close:disabled {

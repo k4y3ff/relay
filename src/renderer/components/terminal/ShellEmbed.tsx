@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { spawnSparklesAtXTermCursor } from '../../lib/sparkles';
+import { useTheme } from '../../context/ThemeContext';
 // xterm CSS is already imported by TerminalEmbed; no need to re-import
 
 interface Props {
@@ -19,6 +20,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const { theme } = useTheme();
 
   useImperativeHandle(ref, () => ({
     clear: () => termRef.current?.clear(),
@@ -38,7 +40,12 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
     const container = containerRef.current;
     if (!container) return;
 
-    const term = new Terminal({ allowProposedApi: true, copyOnSelect: true, fontSize: 13 });
+    const term = new Terminal({
+      allowProposedApi: true,
+      copyOnSelect: true,
+      fontSize: 13,
+      theme: theme.shellTerminal ?? theme.terminal,
+    });
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(container);
@@ -80,6 +87,13 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
       fitAddonRef.current = null;
     };
   }, [tabId]); // cwd is stable per tab instance; eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply theme updates to the running terminal
+  useEffect(() => {
+    if (termRef.current) {
+      termRef.current.options.theme = theme.shellTerminal ?? theme.terminal;
+    }
+  }, [theme]);
 
   // Refit when becoming visible after being hidden
   useEffect(() => {
