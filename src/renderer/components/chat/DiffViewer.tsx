@@ -95,7 +95,7 @@ export default function DiffViewer({ worktreePath, filePath, status, added, dele
 
   const handleAddToChat = useCallback(() => {
     if (!selectedText || !toolbarTargetTabId) return;
-    const message = `The ${filePath} file says:\n${selectedText}\n\n`;
+    const message = `The ${filePath} file says:\n\n${selectedText}\n\n`;
     void window.relay.invoke('terminal:write', { terminalId: toolbarTargetTabId, data: message });
     setSelectedText('');
   }, [selectedText, toolbarTargetTabId, filePath]);
