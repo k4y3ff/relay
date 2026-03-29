@@ -153,7 +153,7 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
               </p>
             )}
             {syntheticGroups.map(({ label, entries }) => (
-              <div key={label}>
+              <div key={label} className="mt-3">
                 <div
                   className="flex items-center gap-1.5 px-3"
                   style={{ height: 28 }}

@@ -58,7 +58,7 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
   }
 
   return (
-    <div>
+    <div className="mt-3">
       <TaskGroupHeader
         group={group}
         onAddBranch={() => setAddingBranch(true)}
