@@ -68,7 +68,13 @@ export class TerminalManager {
 
     if (/[\r\n]/.test(data)) {
       const s = this.getOrCreateNotifyState(terminalId);
-      s.pendingResponse = true;
+      if (!s.pendingResponse) {
+        s.pendingResponse = true;
+        if (!this.win.isDestroyed()) {
+          const path = this.terminalPaths.get(terminalId) ?? worktreePath;
+          this.win.webContents.send('response:start', { worktreePath: path });
+        }
+      }
       if (s.idleTimer !== null) {
         clearTimeout(s.idleTimer);
         s.idleTimer = null;

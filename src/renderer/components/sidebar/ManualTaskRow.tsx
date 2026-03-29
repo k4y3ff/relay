@@ -46,7 +46,7 @@ export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
   return (
     <div
       style={{ height: 30, minHeight: 30 }}
-      className={`group flex items-center justify-between pl-6 pr-3 text-[14px] select-none cursor-default ${isActive ? 'bg-[var(--color-mac-accent)] text-white' : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'}`}
+      className={`group flex items-center justify-between pl-6 pr-3 text-[14px] select-none cursor-default ${isActive ? 'worktree-row-active text-[var(--color-mac-text)]' : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'}`}
       onClick={() => { if (!renaming) selectManualTask(task.id); }}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
