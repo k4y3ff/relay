@@ -24,7 +24,7 @@ export default function ChatPane() {
   const [activeChatTabByPath, setActiveChatTabByPath] = useState<Map<string, string>>(new Map());
   // All ever-mounted terminals (never removed, keeps PTYs alive)
   const [mountedTerminals, setMountedTerminals] = useState<MountedTerminal[]>([]);
-  // Custom labels for non-first chat tabs (terminalId → label)
+  // Custom labels for chat tabs (terminalId → label)
   const [chatTabLabels, setChatTabLabels] = useState<Map<string, string>>(new Map());
   // Tracks which tab is currently being renamed inline
   const [renamingTabId, setRenamingTabId] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export default function ChatPane() {
     }
   }, [activePaneTab]);
 
-  // Handle context menu actions for non-first chat tabs
+  // Handle context menu actions for chat tabs
   useEffect(() => {
     return window.relay.on('menu:item-clicked', (data: unknown) => {
       const { menuId, itemIndex } = data as { menuId: string; itemIndex: number };
@@ -162,7 +162,7 @@ export default function ChatPane() {
                 });
                 selectPaneTab('chat');
               }}
-              onContextMenu={idx > 0 ? (e) => handleChatTabContextMenu(e, tabId) : undefined}
+              onContextMenu={(e) => handleChatTabContextMenu(e, tabId)}
             >
               {renamingTabId === tabId ? (
                 <input
@@ -179,9 +179,9 @@ export default function ChatPane() {
                   onClick={(e) => e.stopPropagation()}
                 />
               ) : (
-                idx === 0 ? 'Chat' : (chatTabLabels.get(tabId) ?? `Chat ${idx + 1}`)
+                chatTabLabels.get(tabId) ?? (idx === 0 ? 'Chat' : `Chat ${idx + 1}`)
               )}
-              {idx > 0 && (
+              {activeChatTabs.length > 1 && (
                 <span
                   className="chat-tab-close"
                   onClick={(e) => { e.stopPropagation(); closeChatTab(activeWorktreePath, tabId); }}
