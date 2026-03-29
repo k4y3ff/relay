@@ -7,9 +7,10 @@ import OverflowMenu from './OverflowMenu';
 interface TaskGroupHeaderProps {
   group: TaskGroup;
   onAddBranch: () => void;
+  onAddManualTask: () => void;
 }
 
-export default function TaskGroupHeader({ group, onAddBranch }: TaskGroupHeaderProps) {
+export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask }: TaskGroupHeaderProps) {
   const { collapsedGroups, toggleGroupCollapsed, removeTaskGroup, renameTaskGroup } = useRepo();
   const isCollapsed = collapsedGroups.has(group.id);
   const [renaming, setRenaming] = useState(false);
@@ -38,7 +39,8 @@ export default function TaskGroupHeader({ group, onAddBranch }: TaskGroupHeaderP
   }
 
   const menuItems = [
-    { label: 'Add worktree', action: onAddBranch },
+    { label: 'Add branch task…', action: onAddBranch },
+    { label: 'Add manual task', action: onAddManualTask },
     { label: 'Rename', action: () => setRenaming(true) },
     { label: 'Delete group', danger: true, action: () => removeTaskGroup(group.id) },
   ];

@@ -3,6 +3,7 @@ import { createMainWindow } from './window';
 import { registerIpcHandlers } from './ipc';
 import { TerminalManager } from './terminal';
 import { ShellManager } from './shell';
+import { migrateStore } from './store';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -47,6 +48,7 @@ function buildAppMenu(win: BrowserWindow): void {
 }
 
 app.whenReady().then(() => {
+  migrateStore();
   mainWindow = createMainWindow();
   buildAppMenu(mainWindow);
   const terminalManager = new TerminalManager(mainWindow);

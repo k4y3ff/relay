@@ -2,9 +2,10 @@ import { ipcMain, dialog, shell, BrowserWindow, Menu, MenuItem } from 'electron'
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
+import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { store } from './store.js';
-import type { Worktree, BranchEntry, TaskGroup, PersistedTaskGroup, PersistedBranch, ChangedFile } from '../renderer/types/repo.js';
+import type { Worktree, BranchTask, ManualTask, Task, TaskGroup, PersistedTaskGroup, PersistedTask, TaskStatus, ChangedFile } from '../renderer/types/repo.js';
 import type { TerminalManager } from './terminal.js';
 import type { ShellManager } from './shell.js';
 
@@ -45,26 +46,65 @@ async function getCurrentBranch(worktreePath: string): Promise<string> {
   return branch === 'HEAD' ? '(detached)' : branch;
 }
 
-async function hydrateBranch(persisted: PersistedBranch): Promise<BranchEntry | null> {
+async function deriveBranchTaskStatus(persisted: PersistedTask, storedStatus: TaskStatus): Promise<TaskStatus> {
+  const worktreePath = persisted.worktreePath!;
+
+  // If worktree directory is gone, task is done
+  if (!fs.existsSync(worktreePath)) return 'done';
+
+  // If user explicitly set blocked, preserve it
+  if (storedStatus === 'blocked') return 'blocked';
+
+  // Auto-derive: check for uncommitted changes
   try {
-    const branch = await getCurrentBranch(persisted.worktreePath);
+    const { stdout } = await execFileAsync('git', ['status', '--porcelain'], { cwd: worktreePath });
+    if (stdout.trim().length > 0) return 'in-progress';
+  } catch {
+    // ignore — worktree may be inaccessible
+  }
+
+  // Preserve manually set in-progress or done; default to stored status (or todo)
+  return storedStatus === 'done' ? 'todo' : storedStatus;
+}
+
+async function hydrateBranchTask(persisted: PersistedTask): Promise<BranchTask | null> {
+  try {
+    const branch = await getCurrentBranch(persisted.worktreePath!);
+    const status = await deriveBranchTaskStatus(persisted, persisted.status);
     return {
-      repoRootPath: persisted.repoRootPath,
-      repoName: path.basename(persisted.repoRootPath),
-      worktree: { path: persisted.worktreePath, branch, isMain: false, isBare: false },
+      id: persisted.id,
+      type: 'branch',
+      title: persisted.title,
+      status,
+      repoRootPath: persisted.repoRootPath!,
+      repoName: path.basename(persisted.repoRootPath!),
+      worktree: { path: persisted.worktreePath!, branch, isMain: false, isBare: false },
     };
   } catch {
     return null;
   }
 }
 
-async function assembleTaskGroup(persisted: PersistedTaskGroup): Promise<TaskGroup> {
-  const branchResults = await Promise.all(persisted.branches.map(hydrateBranch));
+function hydrateManualTask(persisted: PersistedTask): ManualTask {
   return {
     id: persisted.id,
-    name: persisted.name,
-    branches: branchResults.filter((b): b is BranchEntry => b !== null),
+    type: 'manual',
+    title: persisted.title,
+    status: persisted.status,
   };
+}
+
+async function assembleTaskGroup(persisted: PersistedTaskGroup): Promise<TaskGroup> {
+  const tasks: Task[] = [];
+  for (const t of persisted.tasks) {
+    if (t.type === 'branch') {
+      const hydrated = await hydrateBranchTask(t);
+      if (hydrated) tasks.push(hydrated);
+    } else {
+      tasks.push(hydrateManualTask(t));
+    }
+  }
+  return { id: persisted.id, name: persisted.name, tasks };
 }
 
 // ── IPC handlers ───────────────────────────────────────────────────────────
@@ -80,29 +120,31 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
   ipcMain.handle(
     'taskgroups:create',
     (_event, { name }: { name: string }): PersistedTaskGroup => {
-      const group: PersistedTaskGroup = { id: randomUUID(), name, branches: [] };
+      const group: PersistedTaskGroup = { id: randomUUID(), name, tasks: [] };
       const existing = store.get('taskGroups');
       store.set('taskGroups', [...existing, group]);
       return group;
     }
   );
 
-  // taskgroups:remove — remove a task group and delete all associated worktrees from filesystem
+  // taskgroups:remove — remove a task group and delete all associated worktrees
   ipcMain.handle('taskgroups:remove', async (_event, { groupId }: { groupId: string }): Promise<void> => {
     const existing = store.get('taskGroups');
     const group = existing.find((g) => g.id === groupId);
 
     if (group) {
-      for (const branch of group.branches) {
-        try {
-          await execFileAsync('git', ['worktree', 'remove', branch.worktreePath], { cwd: branch.repoRootPath });
-        } catch {
+      for (const task of group.tasks) {
+        if (task.type === 'branch' && task.worktreePath && task.repoRootPath) {
           try {
-            await execFileAsync('git', ['worktree', 'remove', '--force', branch.worktreePath], {
-              cwd: branch.repoRootPath,
-            });
+            await execFileAsync('git', ['worktree', 'remove', task.worktreePath], { cwd: task.repoRootPath });
           } catch {
-            // ignore: worktree may already be gone
+            try {
+              await execFileAsync('git', ['worktree', 'remove', '--force', task.worktreePath], {
+                cwd: task.repoRootPath,
+              });
+            } catch {
+              // ignore: worktree may already be gone
+            }
           }
         }
       }
@@ -195,13 +237,13 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     store.set('editorWordWrap', enabled);
   });
 
-  // taskgroups:add-branch — fetch default branch, create worktree off it, persist
+  // taskgroups:add-branch — fetch default branch, create worktree off it, persist as a branch task
   ipcMain.handle(
     'taskgroups:add-branch',
     async (
       _event,
       { groupId, folderPath, branchName, defaultBranch }: { groupId: string; folderPath: string; branchName: string; defaultBranch: string }
-    ): Promise<BranchEntry> => {
+    ): Promise<BranchTask> => {
       const worktreesDir = store.get('worktreesDir');
       if (!worktreesDir) throw new Error('WORKTREES_DIR_NOT_SET');
 
@@ -239,39 +281,159 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
         );
       }
 
-      const newWt: Worktree = { path: worktreePath, branch: branchName, isMain: false, isBare: false };
-      const persistedBranch: PersistedBranch = { repoRootPath, worktreePath };
+      const newTask: PersistedTask = {
+        id: randomUUID(),
+        type: 'branch',
+        status: 'todo',
+        title: branchName,
+        repoRootPath,
+        worktreePath,
+      };
       const existing = store.get('taskGroups');
       store.set(
         'taskGroups',
         existing.map((g) =>
-          g.id === groupId ? { ...g, branches: [...g.branches, persistedBranch] } : g
+          g.id === groupId ? { ...g, tasks: [...g.tasks, newTask] } : g
         )
       );
 
-      return { repoRootPath, repoName, worktree: newWt };
+      const result: BranchTask = {
+        id: newTask.id,
+        type: 'branch',
+        title: branchName,
+        status: 'todo',
+        repoRootPath,
+        repoName,
+        worktree: { path: worktreePath, branch: branchName, isMain: false, isBare: false },
+      };
+      return result;
     }
   );
 
-  // taskgroups:remove-branch — remove worktree from filesystem and from group
+  // taskgroups:add-manual-task — add a manual (checklist) task to a group
   ipcMain.handle(
-    'taskgroups:remove-branch',
+    'taskgroups:add-manual-task',
+    (_event, { groupId, title }: { groupId: string; title: string }): ManualTask => {
+      const newTask: PersistedTask = {
+        id: randomUUID(),
+        type: 'manual',
+        status: 'todo',
+        title,
+      };
+      const existing = store.get('taskGroups');
+      store.set(
+        'taskGroups',
+        existing.map((g) =>
+          g.id === groupId ? { ...g, tasks: [...g.tasks, newTask] } : g
+        )
+      );
+      return { id: newTask.id, type: 'manual', title, status: 'todo' };
+    }
+  );
+
+  // taskgroups:remove-task — remove a task from a group; branch tasks also remove the worktree
+  ipcMain.handle(
+    'taskgroups:remove-task',
     async (
       _event,
-      { groupId, worktreePath, repoRootPath }: { groupId: string; worktreePath: string; repoRootPath: string }
+      { groupId, taskId }: { groupId: string; taskId: string }
     ): Promise<void> => {
-      try {
-        await execFileAsync('git', ['worktree', 'remove', worktreePath], { cwd: repoRootPath });
-      } catch {
-        await execFileAsync('git', ['worktree', 'remove', '--force', worktreePath], { cwd: repoRootPath });
+      const existing = store.get('taskGroups');
+      const group = existing.find((g) => g.id === groupId);
+      const task = group?.tasks.find((t) => t.id === taskId);
+
+      if (task?.type === 'branch' && task.worktreePath && task.repoRootPath) {
+        try {
+          await execFileAsync('git', ['worktree', 'remove', task.worktreePath], { cwd: task.repoRootPath });
+        } catch {
+          try {
+            await execFileAsync('git', ['worktree', 'remove', '--force', task.worktreePath], {
+              cwd: task.repoRootPath,
+            });
+          } catch {
+            // ignore: worktree may already be gone
+          }
+        }
       }
 
+      store.set(
+        'taskGroups',
+        existing.map((g) =>
+          g.id === groupId ? { ...g, tasks: g.tasks.filter((t) => t.id !== taskId) } : g
+        )
+      );
+    }
+  );
+
+  // taskgroups:update-task-status — update a task's status (stored, overrides auto-derive)
+  ipcMain.handle(
+    'taskgroups:update-task-status',
+    (_event, { groupId, taskId, status }: { groupId: string; taskId: string; status: TaskStatus }): void => {
       const existing = store.get('taskGroups');
       store.set(
         'taskGroups',
         existing.map((g) =>
           g.id === groupId
-            ? { ...g, branches: g.branches.filter((b) => b.worktreePath !== worktreePath) }
+            ? { ...g, tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)) }
+            : g
+        )
+      );
+    }
+  );
+
+  // taskgroups:move-task — reorder within a group or move to another group
+  ipcMain.handle(
+    'taskgroups:move-task',
+    (_event, { fromGroupId, taskId, toGroupId, insertIndex }: { fromGroupId: string; taskId: string; toGroupId: string; insertIndex: number }): void => {
+      const existing = store.get('taskGroups');
+
+      if (fromGroupId === toGroupId) {
+        // Reorder within the same group
+        store.set(
+          'taskGroups',
+          existing.map((g) => {
+            if (g.id !== fromGroupId) return g;
+            const tasks = [...g.tasks];
+            const fromIndex = tasks.findIndex((t) => t.id === taskId);
+            if (fromIndex === -1) return g;
+            const [task] = tasks.splice(fromIndex, 1);
+            tasks.splice(insertIndex, 0, task);
+            return { ...g, tasks };
+          })
+        );
+      } else {
+        // Move across groups
+        let movedTask: PersistedTask | undefined;
+        const withRemoved = existing.map((g) => {
+          if (g.id !== fromGroupId) return g;
+          movedTask = g.tasks.find((t) => t.id === taskId);
+          return { ...g, tasks: g.tasks.filter((t) => t.id !== taskId) };
+        });
+        if (!movedTask) return;
+        const task = movedTask;
+        store.set(
+          'taskGroups',
+          withRemoved.map((g) => {
+            if (g.id !== toGroupId) return g;
+            const tasks = [...g.tasks];
+            tasks.splice(insertIndex, 0, task);
+            return { ...g, tasks };
+          })
+        );
+      }
+    }
+  );
+
+  // taskgroups:rename-task — rename a task's title
+  ipcMain.handle(
+    'taskgroups:rename-task',
+    (_event, { groupId, taskId, title }: { groupId: string; taskId: string; title: string }): void => {
+      const existing = store.get('taskGroups');
+      store.set(
+        'taskGroups',
+        existing.map((g) =>
+          g.id === groupId
+            ? { ...g, tasks: g.tasks.map((t) => (t.id === taskId ? { ...t, title } : t)) }
             : g
         )
       );

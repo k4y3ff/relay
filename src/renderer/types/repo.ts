@@ -5,28 +5,48 @@ export interface Worktree {
   isBare: boolean;
 }
 
-export interface BranchEntry {
-  repoRootPath: string;  // absolute path to repo root (used for git ops)
-  repoName: string;      // basename of repoRootPath, for display
+export type TaskType = 'branch' | 'manual';
+export type TaskStatus = 'todo' | 'in-progress' | 'blocked' | 'done';
+
+export interface BranchTask {
+  id: string;
+  type: 'branch';
+  title: string;       // branch name, for display
+  status: TaskStatus;  // auto-derived from git, user-overridable
+  repoRootPath: string;
+  repoName: string;
   worktree: Worktree;
 }
+
+export interface ManualTask {
+  id: string;
+  type: 'manual';
+  title: string;
+  status: TaskStatus;
+}
+
+export type Task = BranchTask | ManualTask;
 
 export interface TaskGroup {
   id: string;
   name: string;
-  branches: BranchEntry[];
+  tasks: Task[];
 }
 
 // Shapes stored in electron-store
-export interface PersistedBranch {
-  repoRootPath: string;
-  worktreePath: string;
+export interface PersistedTask {
+  id: string;
+  type: TaskType;
+  status: TaskStatus;
+  title: string;
+  repoRootPath?: string;  // branch tasks only
+  worktreePath?: string;  // branch tasks only
 }
 
 export interface PersistedTaskGroup {
   id: string;
   name: string;
-  branches: PersistedBranch[];
+  tasks: PersistedTask[];
 }
 
 export interface ChangedFile {

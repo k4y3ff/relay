@@ -256,7 +256,7 @@ body,
   background: rgba(0, 122, 255, 0.25);
   border-radius: 6px;
   margin: 0 6px;
-  padding-left: calc(0.75rem - 6px);
+  padding-left: calc(1.5rem - 6px);
   padding-right: calc(0.25rem);
 }
 

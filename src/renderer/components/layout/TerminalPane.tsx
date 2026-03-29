@@ -164,8 +164,8 @@ export default function TerminalPane({ style }: Props) {
     if (!activeWorktreePath) return '';
     let branch = '';
     outer: for (const group of taskGroups) {
-      for (const b of group.branches) {
-        if (b.worktree.path === activeWorktreePath) { branch = b.worktree.branch; break outer; }
+      for (const t of group.tasks) {
+        if (t.type === 'branch' && t.worktree.path === activeWorktreePath) { branch = t.worktree.branch; break outer; }
       }
     }
     const shortened = activeWorktreePath.replace(/^\/Users\/[^/]+/, '~');
