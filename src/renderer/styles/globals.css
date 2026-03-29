@@ -657,6 +657,17 @@ body,
   background: #2196ff;
 }
 
+.chat-tab-new {
+  padding: 0 8px;
+  font-size: 16px;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.chat-tab-new:hover {
+  opacity: 1;
+}
+
 .chat-tab-dirty-dot {
   width: 6px;
   height: 6px;
