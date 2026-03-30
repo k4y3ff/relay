@@ -7,6 +7,7 @@ import ShortcutsModal from '../ShortcutsModal';
 import { useRepo } from '../../context/RepoContext';
 import { useSoundEffects } from '../../hooks/useSoundEffects';
 import { usePowerMode } from '../../hooks/usePowerMode';
+import { useConfetti } from '../../hooks/useConfetti';
 
 const MIN_SIDEBAR = 160;
 const MAX_SIDEBAR = 500;
@@ -42,6 +43,7 @@ export default function AppShell() {
   }, []);
 
   useSoundEffects(activeWorktreePath, activePaneTab);
+  useConfetti(activeWorktreePath, activePaneTab);
   usePowerMode(sparkleCanvasRef);
 
   const onLeftDividerMouseDown = useCallback(

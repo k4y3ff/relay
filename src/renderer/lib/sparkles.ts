@@ -11,7 +11,16 @@ interface Particle {
   hue: number;
 }
 
+interface ConfettiParticle {
+  x: number; y: number;
+  vx: number; vy: number;
+  rotation: number; rotationSpeed: number;
+  w: number; h: number;
+  hue: number; life: number; maxLife: number;
+}
+
 let particles: Particle[] = [];
+let confettiParticles: ConfettiParticle[] = [];
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let rafId: number | null = null;
@@ -50,6 +59,28 @@ export function spawnSparkles(x: number, y: number): void {
       maxLife,
       size: 3 + Math.random() * 3,
       hue: Math.random() * 360,
+    });
+  }
+  if (rafId === null) rafId = requestAnimationFrame(frame);
+}
+
+export function spawnConfetti(): void {
+  if (!canvas) return;
+  const count = 120;
+  for (let i = 0; i < count; i++) {
+    const maxLife = 240 + Math.floor(Math.random() * 60);
+    confettiParticles.push({
+      x: Math.random() * canvas.width,
+      y: -10,
+      vx: (Math.random() - 0.5) * 4,
+      vy: 3 + Math.random() * 4,
+      rotation: Math.random() * Math.PI * 2,
+      rotationSpeed: (Math.random() - 0.5) * 0.3,
+      w: 8 + Math.random() * 6,
+      h: 5 + Math.random() * 4,
+      hue: Math.random() * 360,
+      life: maxLife,
+      maxLife,
     });
   }
   if (rafId === null) rafId = requestAnimationFrame(frame);
@@ -96,9 +127,27 @@ function frame(): void {
     ctx.fillStyle = `hsl(${p.hue}, 100%, 70%)`;
     drawStar(ctx, p.x, p.y, p.size);
   }
+
+  confettiParticles = confettiParticles.filter((p) => p.life > 0);
+  for (const p of confettiParticles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.1;
+    p.rotation += p.rotationSpeed;
+    p.life--;
+
+    ctx.globalAlpha = p.life / p.maxLife;
+    ctx.fillStyle = `hsl(${p.hue}, 90%, 60%)`;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rotation);
+    ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    ctx.restore();
+  }
+
   ctx.globalAlpha = 1;
 
-  rafId = particles.length > 0 ? requestAnimationFrame(frame) : null;
+  rafId = (particles.length > 0 || confettiParticles.length > 0) ? requestAnimationFrame(frame) : null;
 }
 
 export function stopLoop(): void {
@@ -107,4 +156,5 @@ export function stopLoop(): void {
     rafId = null;
   }
   particles = [];
+  confettiParticles = [];
 }
