@@ -122,7 +122,7 @@ export default function ChatPane() {
     });
   }, []);
 
-  const addChatTab = useCallback((worktreePath: string) => {
+  const addChatTab = useCallback((worktreePath: string): string => {
     const newId = worktreePath + ':' + Date.now();
     setChatTabsByPath((prev) => {
       const next = new Map(prev);
@@ -136,6 +136,7 @@ export default function ChatPane() {
     });
     setMountedTerminals((prev) => [...prev, { id: newId, path: worktreePath }]);
     selectPaneTab('chat');
+    return newId;
   }, [selectPaneTab]);
 
   const closeChatTab = useCallback((worktreePath: string, terminalId: string) => {
@@ -177,7 +178,8 @@ export default function ChatPane() {
   useEffect(() => {
     return window.relay.on('tab:new-chat', () => {
       if (!containerRef.current?.contains(document.activeElement) || !activeWorktreePath) return;
-      addChatTab(activeWorktreePath);
+      const newId = addChatTab(activeWorktreePath);
+      setTimeout(() => window.dispatchEvent(new CustomEvent('terminal:focus', { detail: { terminalId: newId } })), 0);
     });
   }, [activeWorktreePath, addChatTab]);
 
