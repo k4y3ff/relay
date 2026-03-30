@@ -44,6 +44,20 @@ function buildAppMenu(win: BrowserWindow): void {
           if (!win.isDestroyed()) win.webContents.send('focus:terminal');
         },
       }),
+      new MenuItem({
+        label: 'Previous Tab',
+        accelerator: 'CmdOrCtrl+Shift+[',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('tab:prev');
+        },
+      }),
+      new MenuItem({
+        label: 'Next Tab',
+        accelerator: 'CmdOrCtrl+Shift+]',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('tab:next');
+        },
+      }),
       new MenuItem({ type: 'separator' }),
       new MenuItem({ role: 'quit' }),
     ],

@@ -159,6 +159,27 @@ export default function ChatPane() {
   const activeChatTabs = activeWorktreePath ? (chatTabsByPath.get(activeWorktreePath) ?? []) : [];
   const activeChatTabId = activeWorktreePath ? (activeChatTabByPath.get(activeWorktreePath) ?? '') : '';
 
+  // Cmd+Shift+[ / Cmd+Shift+]: navigate left/right through the tab bar
+  useEffect(() => {
+    const navigate = (dir: -1 | 1) => {
+      if (!activeWorktreePath) return;
+      const allTabs = [...activeChatTabs, ...diffTabs.map((t) => t.path)];
+      const currentIdx = activePaneTab === 'chat'
+        ? activeChatTabs.indexOf(activeChatTabId)
+        : activeChatTabs.length + diffTabs.findIndex((t) => t.path === activePaneTab);
+      const nextIdx = currentIdx + dir;
+      if (nextIdx < 0 || nextIdx >= allTabs.length) return;
+      if (nextIdx < activeChatTabs.length) {
+        setActiveChatTabByPath((prev) => new Map(prev).set(activeWorktreePath, allTabs[nextIdx]));
+        selectPaneTab('chat');
+      } else {
+        selectPaneTab(allTabs[nextIdx]);
+      }
+    };
+    const offPrev = window.relay.on('tab:prev', () => navigate(-1));
+    const offNext = window.relay.on('tab:next', () => navigate(1));
+    return () => { offPrev(); offNext(); };
+  }, [activeChatTabs, activeChatTabId, diffTabs, activePaneTab, activeWorktreePath, setActiveChatTabByPath, selectPaneTab]);
 
   return (
     <div className="chat-pane">

@@ -164,6 +164,13 @@ export default function ChangedFilesPane({ style }: Props) {
     fetchAllFiles();
   }, [fetchFiles, fetchAllFiles]);
 
+  // Cmd+Shift+[ / Cmd+Shift+]: navigate between All Files (left) and Changes (right)
+  useEffect(() => {
+    const offPrev = window.relay.on('tab:prev', () => setView(v => v === 'changes' ? 'all' : v));
+    const offNext = window.relay.on('tab:next', () => setView(v => v === 'all' ? 'changes' : v));
+    return () => { offPrev(); offNext(); };
+  }, []);
+
   // Cmd+Shift+F: switch to the All Files tab and open search/keyboard-nav mode
   useEffect(() => {
     return window.relay.on('focus:all-files', () => {
