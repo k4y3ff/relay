@@ -52,6 +52,13 @@ function buildAppMenu(win: BrowserWindow): void {
         },
       }),
       new MenuItem({
+        label: 'Focus Task Groups',
+        accelerator: 'CmdOrCtrl+Shift+G',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:sidebar');
+        },
+      }),
+      new MenuItem({
         label: 'Previous Tab',
         accelerator: 'CmdOrCtrl+Shift+[',
         click: () => {

@@ -8,9 +8,10 @@ interface TaskGroupHeaderProps {
   group: TaskGroup;
   onAddBranch: () => void;
   onAddManualTask: () => void;
+  highlighted?: boolean;
 }
 
-export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask }: TaskGroupHeaderProps) {
+export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask, highlighted }: TaskGroupHeaderProps) {
   const { collapsedGroups, toggleGroupCollapsed, removeTaskGroup, renameTaskGroup } = useRepo();
   const isCollapsed = collapsedGroups.has(group.id);
   const [renaming, setRenaming] = useState(false);
@@ -47,7 +48,8 @@ export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask }:
 
   return (
     <div
-      className="group flex items-center gap-1.5 px-3 cursor-pointer select-none hover:bg-[var(--color-mac-surface2)] text-[var(--color-mac-muted)]"
+      data-nav-highlighted={highlighted || undefined}
+      className={`group flex items-center gap-1.5 px-3 cursor-pointer select-none hover:bg-[var(--color-mac-surface2)] text-[var(--color-mac-muted)]${highlighted ? ' bg-[var(--color-mac-surface2)]' : ''}`}
       style={{ height: 28, minHeight: 28 }}
       onClick={() => { if (!renaming) toggleGroupCollapsed(group.id); }}
     >

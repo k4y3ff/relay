@@ -8,9 +8,11 @@ import AddManualTaskInput from './AddManualTaskInput';
 
 interface TaskGroupSectionProps {
   group: TaskGroup;
+  highlightedGroupId?: string | null;
+  highlightedTaskId?: string | null;
 }
 
-export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
+export default function TaskGroupSection({ group, highlightedGroupId, highlightedTaskId }: TaskGroupSectionProps) {
   const { collapsedGroups, moveTask } = useRepo();
   const isCollapsed = collapsedGroups.has(group.id);
   const [addingBranch, setAddingBranch] = useState(false);
@@ -63,6 +65,7 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
         group={group}
         onAddBranch={() => setAddingBranch(true)}
         onAddManualTask={() => setAddingManual(true)}
+        highlighted={highlightedGroupId === group.id}
       />
       <div
         ref={containerRef}
@@ -94,7 +97,7 @@ export default function TaskGroupSection({ group }: TaskGroupSectionProps) {
         )}
         {group.tasks.map((task, i) => (
           <div key={task.id} onDragEnter={(e) => handleTaskDragEnter(e, i)}>
-            <TaskRow groupId={group.id} task={task} />
+            <TaskRow groupId={group.id} task={task} highlighted={highlightedTaskId === task.id} />
           </div>
         ))}
         {addingManual && (

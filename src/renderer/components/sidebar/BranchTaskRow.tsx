@@ -8,9 +8,10 @@ import SparkleIndicator from './SparkleIndicator';
 interface BranchTaskRowProps {
   groupId: string;
   task: BranchTask;
+  highlighted?: boolean;
 }
 
-export default function BranchTaskRow({ groupId, task }: BranchTaskRowProps) {
+export default function BranchTaskRow({ groupId, task, highlighted }: BranchTaskRowProps) {
   const { activeWorktreePath, runningWorktreePaths, pendingReviewPaths, selectWorktree, removeTask, updateTaskStatus } = useRepo();
   const isActive = activeWorktreePath === task.worktree.path;
   const isRunning = runningWorktreePaths.has(task.worktree.path);
@@ -59,10 +60,13 @@ export default function BranchTaskRow({ groupId, task }: BranchTaskRowProps) {
       title={task.worktree.path}
       onClick={() => selectWorktree(task.worktree.path)}
       style={{ height: 30, minHeight: 30 }}
+      data-nav-highlighted={highlighted || undefined}
       className={`group flex items-center justify-between pl-6 pr-3 cursor-pointer text-[14px] select-none ${
         isActive
           ? 'worktree-row-active text-[var(--color-mac-text)]'
-          : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'
+          : highlighted
+            ? 'bg-[var(--color-mac-surface2)] text-[var(--color-mac-text)]'
+            : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'
       }`}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
