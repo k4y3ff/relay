@@ -162,11 +162,14 @@ export default function TerminalPane({ style }: Props) {
   // ⌘T — open a new terminal tab when focus is within the terminal pane
   useEffect(() => {
     return window.relay.on('tab:new-chat', () => {
-      if (shellBodyRef.current?.contains(document.activeElement)) {
-        handleAddTab();
-      }
+      if (!shellBodyRef.current?.contains(document.activeElement)) return;
+      handleAddTab();
+      setTimeout(() => {
+        const state = wtTabsRef.current.get(activeWorktreePath ?? '');
+        if (state) shellRefsMap.current.get(state.activeTabId)?.focus();
+      }, 0);
     });
-  }, [handleAddTab]);
+  }, [activeWorktreePath, handleAddTab]);
 
   // ⌘⇧T — focus the active terminal shell
   useEffect(() => {
