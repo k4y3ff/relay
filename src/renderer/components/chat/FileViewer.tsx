@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
@@ -117,8 +117,20 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
     return () => window.removeEventListener('settings:editor-word-wrap-changed', handleWrapChange);
   }, []);
 
-  // viewer:focus: focus immediately if editor is ready, otherwise queue it
+  // Apply pending focus once the editor container transitions from display:none to visible.
+  // Calling view.focus() inside the .then() callback doesn't work because setLoading(false)
+  // is batched — the div is still display:none when the editor is created.
   useEffect(() => {
+    if (!loading && pendingFocusRef.current && viewRef.current) {
+      pendingFocusRef.current = false;
+      viewRef.current.focus();
+    }
+  }, [loading]);
+
+  // viewer:focus: focus immediately if editor is ready, otherwise queue it.
+  // useLayoutEffect ensures the listener is registered synchronously after mount,
+  // before any setTimeout(0) callback in ChangedFilesPane can fire.
+  useLayoutEffect(() => {
     const handler = () => {
       if (viewRef.current) viewRef.current.focus();
       else pendingFocusRef.current = true;
@@ -190,10 +202,6 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
         const state = EditorState.create({ doc: content, extensions });
         const view = new EditorView({ state, parent: editorRef.current! });
         viewRef.current = view;
-        if (pendingFocusRef.current) {
-          pendingFocusRef.current = false;
-          view.focus();
-        }
       })
       .catch((err: unknown) => {
         if (stale) return;
@@ -203,6 +211,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
 
     return () => {
       stale = true;
+      pendingFocusRef.current = false;
       if (viewRef.current) {
         viewRef.current.destroy();
         viewRef.current = null;
