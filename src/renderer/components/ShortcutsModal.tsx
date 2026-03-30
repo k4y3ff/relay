@@ -19,6 +19,7 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
       { keys: ['⌘', '⇧', 'C'], description: 'Focus Claude chat' },
       { keys: ['⌘', '⇧', 'T'], description: 'Focus terminal' },
       { keys: ['⌘', '⇧', 'G'], description: 'Navigate task groups' },
+      { keys: ['⌘', '⇧', 'G', '→', '⌘', 'F'], description: 'Search tasks' },
     ],
   },
   {
