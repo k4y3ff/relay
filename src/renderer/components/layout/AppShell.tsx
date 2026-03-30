@@ -3,6 +3,7 @@ import ChatPane from './ChatPane';
 import RightColumn from './RightColumn';
 import Sidebar from './Sidebar';
 import SettingsModal from '../SettingsModal';
+import ShortcutsModal from '../ShortcutsModal';
 import { useRepo } from '../../context/RepoContext';
 import { useSoundEffects } from '../../hooks/useSoundEffects';
 import { usePowerMode } from '../../hooks/usePowerMode';
@@ -16,11 +17,16 @@ export default function AppShell() {
   const [sidebarW, setSidebarW] = useState(260);
   const [rightW, setRightW] = useState(320);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { activeWorktreePath, activePaneTab } = useRepo();
   const sparkleCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     return window.relay.on('open:settings', () => setSettingsOpen(true));
+  }, []);
+
+  useEffect(() => {
+    return window.relay.on('open:shortcuts-modal', () => setShortcutsOpen(true));
   }, []);
 
   useSoundEffects(activeWorktreePath, activePaneTab);
@@ -73,6 +79,7 @@ export default function AppShell() {
         <RightColumn style={{ width: rightW }} />
       </div>
       {settingsOpen && <SettingsModal onClose={() => setSettingsOpen(false)} />}
+      {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
       <canvas
         ref={sparkleCanvasRef}
         style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 9999 }}

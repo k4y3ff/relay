@@ -52,6 +52,13 @@ function buildAppMenu(win: BrowserWindow): void {
         },
       }),
       new MenuItem({
+        label: 'Keyboard Shortcuts',
+        accelerator: 'CmdOrCtrl+?',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('open:shortcuts-modal');
+        },
+      }),
+      new MenuItem({
         label: 'Focus Task Groups',
         accelerator: 'CmdOrCtrl+Shift+G',
         click: () => {
