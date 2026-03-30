@@ -159,6 +159,16 @@ export default function ChatPane() {
   const activeChatTabs = activeWorktreePath ? (chatTabsByPath.get(activeWorktreePath) ?? []) : [];
   const activeChatTabId = activeWorktreePath ? (activeChatTabByPath.get(activeWorktreePath) ?? '') : '';
 
+  // Cmd+Shift+C: focus the active chat terminal
+  useEffect(() => {
+    return window.relay.on('focus:chat-terminal', () => {
+      selectPaneTab('chat');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('terminal:focus', { detail: { terminalId: activeChatTabId } }));
+      }, 0);
+    });
+  }, [activeChatTabId, selectPaneTab]);
+
   // Cmd+Shift+[ / Cmd+Shift+]: navigate left/right through the tab bar
   useEffect(() => {
     const navigate = (dir: -1 | 1) => {

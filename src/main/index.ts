@@ -24,8 +24,15 @@ function buildAppMenu(win: BrowserWindow): void {
         },
       }),
       new MenuItem({
-        label: 'Show Changes',
+        label: 'Focus Claude',
         accelerator: 'CmdOrCtrl+Shift+C',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:chat-terminal');
+        },
+      }),
+      new MenuItem({
+        label: 'Show Changes',
+        accelerator: 'CmdOrCtrl+Shift+D',
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('focus:changes-tab');
         },
