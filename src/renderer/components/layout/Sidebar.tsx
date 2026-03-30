@@ -18,6 +18,11 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
   const [navActive, setNavActive] = useState(false);
   const [navIndex, setNavIndex] = useState(0);
 
+  // Sidebar search state (activated via Cmd+Shift+G then Cmd+F)
+  const [searchActive, setSearchActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
   const [groupBy, setGroupBy] = useState<GroupBy>('task-group');
   const [filterStatuses, setFilterStatuses] = useState<Set<TaskStatus>>(new Set());
   const [filterMenuOpen, setFilterMenuOpen] = useState(false);
@@ -44,14 +49,20 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
     if (e.key === 'Escape') setIsCreating(false);
   }
 
-  // Compute display groups based on groupBy and filterStatuses
+  // Compute display groups based on groupBy, filterStatuses, and searchQuery
   const filteredTaskGroups = useMemo<TaskGroup[]>(() => {
-    if (filterStatuses.size === 0) return taskGroups;
+    const query = searchQuery.trim().toLowerCase();
     return taskGroups.map((g) => ({
       ...g,
-      tasks: g.tasks.filter((t) => filterStatuses.has(t.status)),
+      tasks: g.tasks.filter((t) => {
+        if (filterStatuses.size > 0 && !filterStatuses.has(t.status)) return false;
+        if (query) {
+          return t.title.toLowerCase().includes(query);
+        }
+        return true;
+      }),
     }));
-  }, [taskGroups, filterStatuses]);
+  }, [taskGroups, filterStatuses, searchQuery]);
 
   // For repo/status groupings: flat list of all tasks (filtered)
   const allFilteredTasks = useMemo<{ task: Task; groupId: string }[]>(() => {
@@ -95,16 +106,17 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
   const navItems = useMemo(() => {
     if (groupBy !== 'task-group') return [];
     const items: Array<{ kind: 'group'; groupId: string } | { kind: 'task'; groupId: string; task: Task }> = [];
+    const isSearching = searchActive && searchQuery.trim().length > 0;
     for (const group of filteredTaskGroups) {
-      items.push({ kind: 'group', groupId: group.id });
-      if (!collapsedGroups.has(group.id)) {
+      if (!isSearching) items.push({ kind: 'group', groupId: group.id });
+      if (isSearching || !collapsedGroups.has(group.id)) {
         for (const task of group.tasks) {
           items.push({ kind: 'task', groupId: group.id, task });
         }
       }
     }
     return items;
-  }, [filteredTaskGroups, collapsedGroups, groupBy]);
+  }, [filteredTaskGroups, collapsedGroups, groupBy, searchActive, searchQuery]);
 
   // Clamp navIndex when the item list shrinks (e.g. group collapses)
   useEffect(() => {
@@ -116,21 +128,37 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
     return window.relay.on('focus:sidebar', () => {
       setNavActive(true);
       setNavIndex(0);
+      setSearchActive(false);
+      setSearchQuery('');
       setTimeout(() => scrollRef.current?.focus(), 0);
     });
   }, []);
 
   useEffect(() => {
-    const handler = () => setNavActive(false);
+    const handler = () => {
+      setNavActive(false);
+      setSearchActive(false);
+      setSearchQuery('');
+    };
     window.addEventListener('nav:deactivate', handler);
     return () => window.removeEventListener('nav:deactivate', handler);
   }, []);
 
-  // Arrow / Enter / Escape handling while nav is active
+  // Arrow / Enter / Escape / Cmd+F handling while nav is active
   useEffect(() => {
     if (!navActive) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowDown') {
+      // Defer all keys to SidebarFilterMenu when it is open
+      if (filterMenuOpen) return;
+      if (e.metaKey && !e.shiftKey && e.key === 'g') {
+        e.preventDefault();
+        setFilterMenuOpen((v) => !v);
+      } else if (e.metaKey && e.key === 'f') {
+        e.preventDefault();
+        setSearchActive(true);
+        setNavIndex(0);
+        setTimeout(() => searchInputRef.current?.focus(), 0);
+      } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         setNavIndex((i) => Math.min(i + 1, navItems.length - 1));
       } else if (e.key === 'ArrowUp') {
@@ -150,14 +178,24 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
             setTimeout(() => window.dispatchEvent(new CustomEvent('notes:focus')), 0);
           }
           setNavActive(false);
+          setSearchActive(false);
+          setSearchQuery('');
         }
       } else if (e.key === 'Escape') {
-        setNavActive(false);
+        if (searchActive && searchQuery.length > 0) {
+          setSearchQuery('');
+          setNavIndex(0);
+        } else if (searchActive) {
+          setSearchActive(false);
+          setTimeout(() => scrollRef.current?.focus(), 0);
+        } else {
+          setNavActive(false);
+        }
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [navActive, navIndex, navItems, toggleGroupCollapsed, selectWorktree, selectManualTask]);
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [navActive, navIndex, navItems, searchActive, searchQuery, filterMenuOpen, toggleGroupCollapsed, selectWorktree, selectManualTask]);
 
   // Scroll the highlighted item into view
   useEffect(() => {
@@ -209,6 +247,21 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
           />
         )}
       </div>
+
+      {/* Search bar (shown after Cmd+Shift+G → Cmd+F) */}
+      {searchActive && (
+        <div className="flex-shrink-0 px-2 py-1.5 border-b border-[var(--color-mac-border)]">
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setNavIndex(0); }}
+            placeholder="Search tasks…"
+            className="w-full px-2 py-0.5 text-[13px] rounded bg-[var(--color-mac-bg)] border border-[var(--color-mac-accent)] text-[var(--color-mac-text)] outline-none"
+            style={{ userSelect: 'text' }}
+          />
+        </div>
+      )}
 
       {/* Task group list */}
       <div ref={scrollRef} tabIndex={-1} className="flex-1 overflow-y-auto overflow-x-hidden outline-none">
