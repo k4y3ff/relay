@@ -122,6 +122,15 @@ export default function ChangedFilesPane({ style }: Props) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  // Refs so IPC handlers can read current nav state without stale closures
+  const isSearchingRef = useRef(false);
+  const changesNavActiveRef = useRef(false);
+  useEffect(() => { isSearchingRef.current = isSearching; }, [isSearching]);
+  useEffect(() => { changesNavActiveRef.current = changesNavActive; }, [changesNavActive]);
+  // Broadcast nav state so ChatPane can yield when right pane is active
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('right-pane:nav-changed', { detail: isSearching || changesNavActive }));
+  }, [isSearching, changesNavActive]);
 
   const fetchFiles = useCallback(async () => {
     if (!activeWorktreePath) {
@@ -165,9 +174,11 @@ export default function ChangedFilesPane({ style }: Props) {
     fetchAllFiles();
   }, [fetchFiles, fetchAllFiles]);
 
-  // Cmd+Shift+[ / Cmd+Shift+]: navigate between All Files (left) and Changes (right)
+
+  // Cmd+Shift+[ / Cmd+Shift+]: navigate tabs only when right pane nav mode is active
   useEffect(() => {
     const offPrev = window.relay.on('tab:prev', () => {
+      if (!isSearchingRef.current && !changesNavActiveRef.current) return;
       setView(v => {
         if (v === 'changes') {
           setIsSearching(true);
@@ -178,6 +189,7 @@ export default function ChangedFilesPane({ style }: Props) {
       });
     });
     const offNext = window.relay.on('tab:next', () => {
+      if (!isSearchingRef.current && !changesNavActiveRef.current) return;
       setView(v => {
         if (v === 'all') {
           setChangesNavActive(true);

@@ -172,9 +172,20 @@ export default function ChatPane() {
     return () => { offIpc(); window.removeEventListener('chat:focus', focus); };
   }, [activeChatTabId, selectPaneTab]);
 
+  // Track whether the right pane (ChangedFilesPane) is in keyboard-nav mode
+  const rightPaneNavActiveRef = useRef(false);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      rightPaneNavActiveRef.current = (e as CustomEvent<boolean>).detail;
+    };
+    window.addEventListener('right-pane:nav-changed', handler);
+    return () => window.removeEventListener('right-pane:nav-changed', handler);
+  }, []);
+
   // Cmd+Shift+[ / Cmd+Shift+]: navigate left/right through the tab bar
   useEffect(() => {
     const navigate = (dir: -1 | 1) => {
+      if (rightPaneNavActiveRef.current) return;
       if (!activeWorktreePath) return;
       const allTabs = [...activeChatTabs, ...diffTabs.map((t) => t.path)];
       const currentIdx = activePaneTab === 'chat'

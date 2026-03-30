@@ -31,6 +31,13 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
     ],
   },
   {
+    heading: 'Chat Pane',
+    shortcuts: [
+      { keys: ['⌘', '⇧', '['], description: 'Previous tab' },
+      { keys: ['⌘', '⇧', ']'], description: 'Next tab' },
+    ],
+  },
+  {
     heading: 'Navigation Modes',
     shortcuts: [
       { keys: ['↑', '↓'], description: 'Move selection' },
