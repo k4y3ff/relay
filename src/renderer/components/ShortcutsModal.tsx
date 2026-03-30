@@ -30,6 +30,7 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
       { keys: ['⌘', '⇧', 'F'], description: 'Show All Files tab' },
       { keys: ['⌘', '⇧', '['], description: 'Previous tab' },
       { keys: ['⌘', '⇧', ']'], description: 'Next tab' },
+      { keys: ['⌘', '⇧', '⎋'], description: 'Close tab' },
     ],
   },
   {

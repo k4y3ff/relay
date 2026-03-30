@@ -73,6 +73,13 @@ function buildAppMenu(win: BrowserWindow): void {
         },
       }),
       new MenuItem({
+        label: 'Close Tab',
+        accelerator: 'CmdOrCtrl+Shift+Escape',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('tab:close');
+        },
+      }),
+      new MenuItem({
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',
         click: () => {
