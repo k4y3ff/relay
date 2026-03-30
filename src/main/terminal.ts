@@ -1,5 +1,6 @@
 import * as pty from 'node-pty';
 import { BrowserWindow, Notification } from 'electron';
+import path from 'path';
 import { store } from './store.js';
 
 interface WorktreeNotifyState {
@@ -102,13 +103,15 @@ export class TerminalManager {
     return this.notifyState.get(terminalId)!;
   }
 
-  private resolveLabels(worktreePath: string): { groupName: string; branchName: string } | null {
+  private resolveLabels(worktreePath: string): { groupName: string; branchName: string; repoName: string } | null {
     const groups = store.get('taskGroups');
     for (const group of groups) {
-      if (group.tasks.some((t) => t.type === 'branch' && t.worktreePath === worktreePath)) {
+      const task = group.tasks.find((t) => t.type === 'branch' && t.worktreePath === worktreePath);
+      if (task) {
         return {
           groupName: group.name,
           branchName: worktreePath.split('/').pop() ?? worktreePath,
+          repoName: task.repoRootPath ? path.basename(task.repoRootPath) : '',
         };
       }
     }
@@ -123,6 +126,7 @@ export class TerminalManager {
 
     const notif = new Notification({
       title: labels.groupName,
+      subtitle: labels.repoName,
       body: `Claude finished on ${labels.branchName}`,
     });
 
