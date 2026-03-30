@@ -1,4 +1,4 @@
-import { ipcMain, dialog, shell, BrowserWindow, Menu, MenuItem } from 'electron';
+import { ipcMain, dialog, shell, BrowserWindow, Menu, MenuItem, app, nativeImage } from 'electron';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import path from 'node:path';
@@ -10,6 +10,13 @@ import type { TerminalManager } from './terminal.js';
 import type { ShellManager } from './shell.js';
 
 const execFileAsync = promisify(execFile);
+
+export function updateDockIcon(theme: string): void {
+  if (process.platform !== 'darwin' || !app.dock) return;
+  const iconFile = theme === 'pink' ? 'icon-pink.png' : 'icon.png';
+  const iconPath = path.join(__dirname, '../../assets', iconFile);
+  app.dock.setIcon(nativeImage.createFromPath(iconPath));
+}
 
 // ── Git helpers ────────────────────────────────────────────────────────────
 
@@ -265,9 +272,10 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
   // settings:get-app-theme — return the saved app theme name
   ipcMain.handle('settings:get-app-theme', (): string => store.get('appTheme'));
 
-  // settings:set-app-theme — persist the app theme preference
+  // settings:set-app-theme — persist the app theme preference and update dock icon
   ipcMain.handle('settings:set-app-theme', (_event, { theme }: { theme: string }): void => {
     store.set('appTheme', theme);
+    updateDockIcon(theme);
   });
 
   // settings:get-editor-theme — return the saved editor theme id
