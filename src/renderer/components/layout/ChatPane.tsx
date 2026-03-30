@@ -182,6 +182,20 @@ export default function ChatPane() {
     return () => window.removeEventListener('right-pane:nav-changed', handler);
   }, []);
 
+  // Cmd+Shift+Esc: close the currently active tab
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || !e.metaKey || !e.shiftKey) return;
+      if (activePaneTab !== 'chat') {
+        closeDiffTab(activePaneTab);
+      } else if (activeWorktreePath && activeChatTabs.length > 1) {
+        closeChatTab(activeWorktreePath, activeChatTabId);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activePaneTab, closeDiffTab, activeWorktreePath, activeChatTabs, activeChatTabId, closeChatTab]);
+
   // Cmd+Shift+[ / Cmd+Shift+]: navigate left/right through the tab bar
   useEffect(() => {
     const navigate = (dir: -1 | 1) => {
