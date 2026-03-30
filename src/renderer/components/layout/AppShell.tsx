@@ -29,6 +29,14 @@ export default function AppShell() {
     return window.relay.on('open:shortcuts-modal', () => setShortcutsOpen(true));
   }, []);
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.metaKey && e.key === '?') setShortcutsOpen(true);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   useSoundEffects(activeWorktreePath, activePaneTab);
   usePowerMode(sparkleCanvasRef);
 
