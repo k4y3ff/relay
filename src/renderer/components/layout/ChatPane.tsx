@@ -48,9 +48,7 @@ export default function ChatPane() {
   const renameInputRef = useRef<HTMLInputElement>(null);
   // Tracks which tab was right-clicked, for the context menu handler
   const contextTabRef = useRef<string | null>(null);
-  // Tracks whether the middle pane has keyboard focus (for Cmd+T)
   const containerRef = useRef<HTMLDivElement>(null);
-  const isMiddlePaneFocusedRef = useRef(false);
 
   // When the active worktree changes, ensure it has at least one chat tab
   useEffect(() => {
@@ -175,25 +173,10 @@ export default function ChatPane() {
     return () => { offIpc(); window.removeEventListener('chat:focus', focus); };
   }, [activeChatTabId, selectPaneTab]);
 
-  // Track focus in/out on the ChatPane container for Cmd+T
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const onFocusIn = () => { isMiddlePaneFocusedRef.current = true; };
-    const onFocusOut = (e: FocusEvent) => {
-      if (!el.contains(e.relatedTarget as Node | null)) {
-        isMiddlePaneFocusedRef.current = false;
-      }
-    };
-    el.addEventListener('focusin', onFocusIn);
-    el.addEventListener('focusout', onFocusOut);
-    return () => { el.removeEventListener('focusin', onFocusIn); el.removeEventListener('focusout', onFocusOut); };
-  }, []);
-
   // Cmd+T: open a new Claude Code tab when the middle pane is focused
   useEffect(() => {
     return window.relay.on('tab:new-chat', () => {
-      if (!isMiddlePaneFocusedRef.current || !activeWorktreePath) return;
+      if (!containerRef.current?.contains(document.activeElement) || !activeWorktreePath) return;
       addChatTab(activeWorktreePath);
     });
   }, [activeWorktreePath, addChatTab]);
@@ -208,10 +191,11 @@ export default function ChatPane() {
     return () => window.removeEventListener('right-pane:nav-changed', handler);
   }, []);
 
-  // Cmd+Shift+Esc: close the currently active tab
+  // Cmd+Shift+Esc: close the currently active tab (only when middle pane is focused)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || !e.metaKey || !e.shiftKey) return;
+      if (!containerRef.current?.contains(document.activeElement)) return;
       if (activePaneTab !== 'chat') {
         closeDiffTab(activePaneTab);
       } else if (activeWorktreePath && activeChatTabs.length > 1) {
@@ -251,7 +235,7 @@ export default function ChatPane() {
   // Cmd+Shift+Escape: close the active tab (only when middle pane is focused)
   useEffect(() => {
     const off = window.relay.on('tab:close', () => {
-      if (!isMiddlePaneFocusedRef.current || !activeWorktreePath) return;
+      if (!containerRef.current?.contains(document.activeElement) || !activeWorktreePath) return;
       if (activePaneTab === 'chat') {
         if (activeChatTabs.length > 1) closeChatTab(activeWorktreePath, activeChatTabId);
       } else {
