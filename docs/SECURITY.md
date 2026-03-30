@@ -13,7 +13,7 @@ Relay is a macOS-only Electron desktop application that integrates git worktree 
 
 **Overall risk rating: MEDIUM**
 
-Relay has sound fundamentals: Electron's `contextIsolation` is enabled, `nodeIntegration` is disabled, file reads and writes are scoped to worktree paths, and no credentials are stored by the application. The renderer sandbox is now enabled for production builds. However, several issues still warrant attention before broad enterprise deployment, most significantly the full-environment PTY inheritance and the unencrypted local data store.
+Relay has sound fundamentals: Electron's `contextIsolation` is enabled, `nodeIntegration` is disabled, the renderer runs sandboxed in production builds, file reads and writes are scoped to worktree paths, and no credentials are stored by the application. However, several issues warrant attention before broad enterprise deployment, most significantly the full-environment PTY inheritance and the unencrypted local data store.
 
 ---
 
@@ -35,25 +35,7 @@ Relay has sound fundamentals: Electron's `contextIsolation` is enabled, `nodeInt
 
 ---
 
-## Finding 1: Renderer sandbox is disabled — ~~MEDIUM~~ RESOLVED
-
-**Location:** `src/main/window.ts:24`
-
-**Status:** Fixed. `sandbox` is now set conditionally via `app.isPackaged`:
-
-```ts
-webPreferences: {
-  nodeIntegration: false,
-  contextIsolation: true,
-  sandbox: app.isPackaged,   // true in production, false in dev
-}
-```
-
-Production builds run with the OS-level renderer sandbox enabled. `sandbox: false` is retained only in dev mode for electron-vite HMR compatibility. The native `node-pty` module is unaffected as it runs exclusively in the main process.
-
----
-
-## Finding 2: PTY sessions inherit the full parent environment — MEDIUM
+## Finding 1: PTY sessions inherit the full parent environment — MEDIUM
 
 **Location:** `src/main/terminal.ts:32` and `src/main/shell.ts:21`
 
@@ -89,7 +71,7 @@ This is consistent with how developers use a terminal directly, so it is not une
 
 ---
 
-## Finding 3: File paths are not fully validated against worktree root — MEDIUM
+## Finding 2: File paths are not fully validated against worktree root — MEDIUM
 
 **Location:** `src/main/ipc.ts:618–640` and `src/main/ipc.ts:642–665`
 
@@ -126,7 +108,7 @@ This is a defense-in-depth measure. The actual risk is low given the IPC model, 
 
 ---
 
-## Finding 4: IPC channels are not allowlisted — LOW
+## Finding 3: IPC channels are not allowlisted — LOW
 
 **Location:** `src/preload/index.ts:8`
 
@@ -151,7 +133,7 @@ invoke: (channel: string, ...args: unknown[]) => {
 
 ---
 
-## Finding 5: Data store is unencrypted — LOW
+## Finding 4: Data store is unencrypted — LOW
 
 **Location:** `src/main/store.ts`
 
@@ -168,17 +150,17 @@ No credentials, tokens, or file contents are stored. The paths and names could b
 
 ---
 
-## Finding 6: Context menu items are renderer-controlled — LOW
+## Finding 5: Context menu items are renderer-controlled — LOW
 
 **Location:** `src/main/ipc.ts:282–309`
 
 The `menu:show-context-menu` handler builds a native macOS menu from renderer-supplied label strings without sanitization. Labels are displayed in the OS context menu UI and are not interpreted as code, so there is no injection risk. However, an attacker with renderer control could display misleading UI (e.g. a fake "Grant Full Disk Access" menu item).
 
-**Recommendation:** This is acceptable given the current threat model. If renderer sandboxing is added (Finding 1), this risk is further mitigated.
+**Recommendation:** This is acceptable given the current threat model.
 
 ---
 
-## Finding 7: `shell:open-path` opens arbitrary paths — LOW
+## Finding 6: `shell:open-path` opens arbitrary paths — LOW
 
 **Location:** `src/main/ipc.ts:555–557`
 
@@ -194,7 +176,7 @@ The `shell:open-path` handler accepts a renderer-supplied path and opens it via 
 
 ---
 
-## Finding 8: No Content-Security-Policy in renderer HTML — INFORMATIONAL
+## Finding 7: No Content-Security-Policy in renderer HTML — INFORMATIONAL
 
 **Location:** `src/renderer/index.html`
 
@@ -211,7 +193,7 @@ The renderer's `index.html` has no `Content-Security-Policy` meta tag. In produc
 
 ---
 
-## Finding 9: Claude response completion detection is heuristic — INFORMATIONAL
+## Finding 8: Claude response completion detection is heuristic — INFORMATIONAL
 
 **Location:** `src/main/terminal.ts:36–48`
 
@@ -225,6 +207,7 @@ The following security properties are correctly implemented:
 
 - **`nodeIntegration: false`** — renderer cannot access Node.js APIs directly
 - **`contextIsolation: true`** — renderer JavaScript runs in a separate context from the preload script
+- **Renderer sandbox enabled in production** — `sandbox: app.isPackaged` ensures the OS-level renderer sandbox is active in packaged builds
 - **No credential storage** — the application stores no API keys, passwords, or tokens. Claude Code authentication is handled entirely by the CLI at `~/.claude`
 - **Git operations use `execFile`** — git subcommands are invoked via `execFile` (not `exec` or `shell: true`), which prevents shell injection from branch names or file paths containing shell metacharacters
 - **Binary file detection** — `fs:read-file` checks the first 8KB for null bytes and refuses to return binary content as a string, preventing large binary files from being sent over IPC
@@ -237,7 +220,6 @@ The following security properties are correctly implemented:
 
 | Finding | Severity | Effort to Fix |
 |---|---|---|
-| ~~Renderer sandbox disabled~~ RESOLVED | ~~MEDIUM~~ | — |
 | PTY inherits full environment | MEDIUM | Low–Medium |
 | No path traversal guard on file I/O (fs:read-file, fs:write-file, git:diff-file) | MEDIUM | Low |
 | IPC channels not allowlisted | LOW | Low |
@@ -254,7 +236,6 @@ Relay is suitable for use by individual developers on managed macOS workstations
 
 Before broad enterprise deployment, the following should be addressed in priority order:
 
-1. Add path traversal guards to `fs:read-file` and `fs:write-file` (Finding 3) — trivial fix, eliminates a class of vulnerability
-2. Add an IPC channel allowlist to the preload bridge (Finding 4) — low effort, prevents future handler exposure
-3. ~~Evaluate enabling `sandbox: true` for production builds (Finding 1)~~ — **DONE**: production builds now run with `sandbox: true`
-4. Document the environment inheritance behavior for security-conscious users (Finding 2)
+1. Add path traversal guards to `fs:read-file` and `fs:write-file` (Finding 2) — trivial fix, eliminates a class of vulnerability
+2. Add an IPC channel allowlist to the preload bridge (Finding 3) — low effort, prevents future handler exposure
+3. Document the environment inheritance behavior for security-conscious users (Finding 1)
