@@ -148,7 +148,10 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
   useEffect(() => {
     if (!navActive) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === 'f') {
+      if (e.metaKey && e.key === 'g') {
+        e.preventDefault();
+        setFilterMenuOpen((v) => !v);
+      } else if (e.metaKey && e.key === 'f') {
         e.preventDefault();
         setSearchActive(true);
         setNavIndex(0);
