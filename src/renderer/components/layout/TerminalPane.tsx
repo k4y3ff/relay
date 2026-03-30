@@ -159,6 +159,15 @@ export default function TerminalPane({ style }: Props) {
     return () => window.removeEventListener('keydown', handler);
   }, [activeTabId]);
 
+  // ⌘T — open a new terminal tab when focus is within the terminal pane
+  useEffect(() => {
+    return window.relay.on('tab:new-chat', () => {
+      if (shellBodyRef.current?.contains(document.activeElement)) {
+        handleAddTab();
+      }
+    });
+  }, [handleAddTab]);
+
   // ⌘⇧T — focus the active terminal shell
   useEffect(() => {
     return window.relay.on('focus:terminal', () => {
