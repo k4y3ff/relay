@@ -1,9 +1,9 @@
 import { app, BrowserWindow, Menu, MenuItem } from 'electron';
 import { createMainWindow } from './window';
-import { registerIpcHandlers } from './ipc';
+import { registerIpcHandlers, updateDockIcon } from './ipc';
 import { TerminalManager } from './terminal';
 import { ShellManager } from './shell';
-import { migrateStore } from './store';
+import { migrateStore, store } from './store';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -49,6 +49,7 @@ function buildAppMenu(win: BrowserWindow): void {
 
 app.whenReady().then(() => {
   migrateStore();
+  updateDockIcon(store.get('appTheme') as string);
   mainWindow = createMainWindow();
   buildAppMenu(mainWindow);
   const terminalManager = new TerminalManager(mainWindow);
