@@ -23,6 +23,13 @@ function buildAppMenu(win: BrowserWindow): void {
           if (!win.isDestroyed()) win.webContents.send('open:settings');
         },
       }),
+      new MenuItem({
+        label: 'Focus Chat',
+        accelerator: 'CmdOrCtrl+Shift+C',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:chat-terminal');
+        },
+      }),
       new MenuItem({ type: 'separator' }),
       new MenuItem({ role: 'quit' }),
     ],
