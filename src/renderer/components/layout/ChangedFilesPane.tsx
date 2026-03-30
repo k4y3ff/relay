@@ -121,6 +121,7 @@ export default function ChangedFilesPane({ style }: Props) {
   const [changesSelectedIndex, setChangesSelectedIndex] = useState(-1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const fetchFiles = useCallback(async () => {
     if (!activeWorktreePath) {
@@ -192,15 +193,18 @@ export default function ChangedFilesPane({ style }: Props) {
   // Cmd+Shift+F: switch to the All Files tab and open search/keyboard-nav mode
   useEffect(() => {
     return window.relay.on('focus:all-files', () => {
+      window.dispatchEvent(new CustomEvent('nav:deactivate'));
       setView('all');
       setIsSearching(true);
       setSelectedIndex(0);
+      setTimeout(() => searchInputRef.current?.focus(), 0);
     });
   }, []);
 
-  // Cmd+Shift+C: switch to the Changes tab and activate keyboard navigation
+  // Cmd+Shift+D: switch to the Changes tab and activate keyboard navigation
   useEffect(() => {
     return window.relay.on('focus:changes-tab', () => {
+      window.dispatchEvent(new CustomEvent('nav:deactivate'));
       setView('changes');
       setChangesNavActive(true);
       setChangesSelectedIndex(0);
@@ -296,6 +300,7 @@ export default function ChangedFilesPane({ style }: Props) {
       <div className="changed-files-header">
         {isSearching && view === 'all' ? (
           <input
+            ref={searchInputRef}
             className="all-files-search-input"
             autoFocus
             placeholder="Search files..."
@@ -314,6 +319,7 @@ export default function ChangedFilesPane({ style }: Props) {
                 if (path) {
                   openDiffTab({ path, status: 'R', added: 0, deleted: 0 });
                   closeSearch();
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('viewer:focus')), 0);
                 }
               }
             }}

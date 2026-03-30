@@ -69,6 +69,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
   const viewRef = useRef<EditorView | null>(null);
   const themeCompartment = useRef(new Compartment());
   const wrapCompartment = useRef(new Compartment());
+  const pendingFocusRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBinary, setIsBinary] = useState(false);
@@ -114,6 +115,16 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
     }
     window.addEventListener('settings:editor-word-wrap-changed', handleWrapChange);
     return () => window.removeEventListener('settings:editor-word-wrap-changed', handleWrapChange);
+  }, []);
+
+  // viewer:focus: focus immediately if editor is ready, otherwise queue it
+  useEffect(() => {
+    const handler = () => {
+      if (viewRef.current) viewRef.current.focus();
+      else pendingFocusRef.current = true;
+    };
+    window.addEventListener('viewer:focus', handler);
+    return () => window.removeEventListener('viewer:focus', handler);
   }, []);
 
   const save = useCallback(async () => {
@@ -179,6 +190,10 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
         const state = EditorState.create({ doc: content, extensions });
         const view = new EditorView({ state, parent: editorRef.current! });
         viewRef.current = view;
+        if (pendingFocusRef.current) {
+          pendingFocusRef.current = false;
+          view.focus();
+        }
       })
       .catch((err: unknown) => {
         if (stale) return;

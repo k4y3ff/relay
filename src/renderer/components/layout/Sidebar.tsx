@@ -120,6 +120,12 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
     });
   }, []);
 
+  useEffect(() => {
+    const handler = () => setNavActive(false);
+    window.addEventListener('nav:deactivate', handler);
+    return () => window.removeEventListener('nav:deactivate', handler);
+  }, []);
+
   // Arrow / Enter / Escape handling while nav is active
   useEffect(() => {
     if (!navActive) return;
