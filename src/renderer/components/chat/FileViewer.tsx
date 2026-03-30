@@ -150,6 +150,11 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
     }
   }, [worktreePath, filePath, markTabClean]);
 
+  // Cmd+S from anywhere (menu accelerator) saves the file
+  useEffect(() => {
+    return window.relay.on('file:save', () => { void save(); });
+  }, [save]);
+
   useEffect(() => {
     let stale = false;
     setLoading(true);

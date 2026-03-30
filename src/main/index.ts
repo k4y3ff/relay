@@ -72,6 +72,13 @@ function buildAppMenu(win: BrowserWindow): void {
           if (!win.isDestroyed()) win.webContents.send('tab:next');
         },
       }),
+      new MenuItem({
+        label: 'Save',
+        accelerator: 'CmdOrCtrl+S',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('file:save');
+        },
+      }),
       new MenuItem({ type: 'separator' }),
       new MenuItem({ role: 'quit' }),
     ],

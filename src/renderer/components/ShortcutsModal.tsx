@@ -31,6 +31,12 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
     ],
   },
   {
+    heading: 'File Editor',
+    shortcuts: [
+      { keys: ['⌘', 'S'], description: 'Save file' },
+    ],
+  },
+  {
     heading: 'Chat Pane',
     shortcuts: [
       { keys: ['⌘', '⇧', '['], description: 'Previous tab' },
