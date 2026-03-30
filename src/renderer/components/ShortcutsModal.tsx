@@ -42,6 +42,7 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
   {
     heading: 'Chat Pane',
     shortcuts: [
+      { keys: ['⌘', 'T'], description: 'New Claude Code tab' },
       { keys: ['⌘', '⇧', '['], description: 'Previous tab' },
       { keys: ['⌘', '⇧', ']'], description: 'Next tab' },
     ],

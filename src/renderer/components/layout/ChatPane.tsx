@@ -48,6 +48,9 @@ export default function ChatPane() {
   const renameInputRef = useRef<HTMLInputElement>(null);
   // Tracks which tab was right-clicked, for the context menu handler
   const contextTabRef = useRef<string | null>(null);
+  // Tracks whether the middle pane has keyboard focus (for Cmd+T)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isMiddlePaneFocusedRef = useRef(false);
 
   // When the active worktree changes, ensure it has at least one chat tab
   useEffect(() => {
@@ -172,6 +175,29 @@ export default function ChatPane() {
     return () => { offIpc(); window.removeEventListener('chat:focus', focus); };
   }, [activeChatTabId, selectPaneTab]);
 
+  // Track focus in/out on the ChatPane container for Cmd+T
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const onFocusIn = () => { isMiddlePaneFocusedRef.current = true; };
+    const onFocusOut = (e: FocusEvent) => {
+      if (!el.contains(e.relatedTarget as Node | null)) {
+        isMiddlePaneFocusedRef.current = false;
+      }
+    };
+    el.addEventListener('focusin', onFocusIn);
+    el.addEventListener('focusout', onFocusOut);
+    return () => { el.removeEventListener('focusin', onFocusIn); el.removeEventListener('focusout', onFocusOut); };
+  }, []);
+
+  // Cmd+T: open a new Claude Code tab when the middle pane is focused
+  useEffect(() => {
+    return window.relay.on('tab:new-chat', () => {
+      if (!isMiddlePaneFocusedRef.current || !activeWorktreePath) return;
+      addChatTab(activeWorktreePath);
+    });
+  }, [activeWorktreePath, addChatTab]);
+
   // Track whether the right pane (ChangedFilesPane) is in keyboard-nav mode
   const rightPaneNavActiveRef = useRef(false);
   useEffect(() => {
@@ -236,7 +262,7 @@ export default function ChatPane() {
   }, [activeWorktreePath, activePaneTab, activeChatTabs, activeChatTabId, closeChatTab, closeDiffTab]);
 
   return (
-    <div className="chat-pane">
+    <div className="chat-pane" ref={containerRef}>
       {activeManualTask && activeManualTaskGroupId && (
         <ManualTaskNotesPane groupId={activeManualTaskGroupId} task={activeManualTask} />
       )}
