@@ -42,6 +42,18 @@ npm run build
 
 Output is written to `out/`. You can preview it with `npm run preview`.
 
+## Packaging for distribution
+
+To create a `.dmg` installer for macOS:
+
+```bash
+npm run package
+```
+
+This builds the app with electron-vite and packages it into a `.dmg` using electron-builder. The output is written to `dist/`.
+
+> **Note:** Apple requires apps distributed outside the Mac App Store to be code-signed and notarized to run without Gatekeeper warnings. For personal use or local testing, you can bypass this by right-clicking the app in Finder and choosing **Open**.
+
 ## Tech stack
 
 | Layer | Technology |
