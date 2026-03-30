@@ -160,6 +160,11 @@ export default function ChangedFilesPane({ style }: Props) {
     fetchAllFiles();
   }, [fetchFiles, fetchAllFiles]);
 
+  // Cmd+Shift+F: switch to the All Files tab
+  useEffect(() => {
+    return window.relay.on('focus:all-files', () => setView('all'));
+  }, []);
+
   // Auto-refresh every 3 seconds when window is focused
   useEffect(() => {
     intervalRef.current = setInterval(() => {

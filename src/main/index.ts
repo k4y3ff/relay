@@ -30,6 +30,13 @@ function buildAppMenu(win: BrowserWindow): void {
           if (!win.isDestroyed()) win.webContents.send('focus:chat-terminal');
         },
       }),
+      new MenuItem({
+        label: 'Show All Files',
+        accelerator: 'CmdOrCtrl+Shift+F',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:all-files');
+        },
+      }),
       new MenuItem({ type: 'separator' }),
       new MenuItem({ role: 'quit' }),
     ],
