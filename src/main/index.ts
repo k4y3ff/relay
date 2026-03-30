@@ -52,13 +52,6 @@ function buildAppMenu(win: BrowserWindow): void {
         },
       }),
       new MenuItem({
-        label: 'Keyboard Shortcuts',
-        accelerator: 'CmdOrCtrl+Shift+/',
-        click: () => {
-          if (!win.isDestroyed()) win.webContents.send('open:shortcuts-modal');
-        },
-      }),
-      new MenuItem({
         label: 'Focus Task Groups',
         accelerator: 'CmdOrCtrl+Shift+G',
         click: () => {
@@ -98,8 +91,24 @@ function buildAppMenu(win: BrowserWindow): void {
     ],
   });
 
+  // Help menu — macOS routes Cmd+? here by convention
+  const helpMenu = new MenuItem({
+    label: 'Help',
+    role: 'help',
+    submenu: [
+      new MenuItem({
+        label: 'Keyboard Shortcuts',
+        accelerator: 'CmdOrCtrl+?',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('open:shortcuts-modal');
+        },
+      }),
+    ],
+  });
+
   menu.append(appMenu);
   menu.append(editMenu);
+  menu.append(helpMenu);
   Menu.setApplicationMenu(menu);
 }
 

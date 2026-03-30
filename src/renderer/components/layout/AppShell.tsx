@@ -31,10 +31,14 @@ export default function AppShell() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.metaKey && e.key === '?') setShortcutsOpen(true);
+      if (e.metaKey && e.shiftKey && (e.key === '?' || e.code === 'Slash')) {
+        e.preventDefault();
+        setShortcutsOpen(true);
+      }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    // Capture phase fires before xterm or any child element can absorb the event
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
   }, []);
 
   useSoundEffects(activeWorktreePath, activePaneTab);
