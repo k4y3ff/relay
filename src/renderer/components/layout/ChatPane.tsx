@@ -208,6 +208,19 @@ export default function ChatPane() {
     return () => { offPrev(); offNext(); };
   }, [activeChatTabs, activeChatTabId, diffTabs, activePaneTab, activeWorktreePath, setActiveChatTabByPath, selectPaneTab]);
 
+  // Cmd+Shift+Escape: close the active tab
+  useEffect(() => {
+    const off = window.relay.on('tab:close', () => {
+      if (!activeWorktreePath) return;
+      if (activePaneTab === 'chat') {
+        if (activeChatTabs.length > 1) closeChatTab(activeWorktreePath, activeChatTabId);
+      } else {
+        closeDiffTab(activePaneTab);
+      }
+    });
+    return off;
+  }, [activeWorktreePath, activePaneTab, activeChatTabs, activeChatTabId, closeChatTab, closeDiffTab]);
+
   return (
     <div className="chat-pane">
       {activeManualTask && activeManualTaskGroupId && (
