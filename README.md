@@ -40,17 +40,17 @@ npm run start
 npm run build
 ```
 
-Output is written to `out/`. You can preview it with `npm run preview`.
+Runs `electron-vite build`, which compiles and bundles the TypeScript/React source (main process, preload, and renderer) into `out/`. The output is runnable via Electron but is not a distributable app — no `.app` bundle or installer is produced. You can preview the renderer with `npm run preview`.
 
 ## Packaging for distribution
 
-To create a `.dmg` installer for macOS:
+To create a distributable macOS app:
 
 ```bash
 npm run package
 ```
 
-This builds the app with electron-vite and packages it into a `.dmg` using electron-builder. The output is written to `dist/`.
+Runs three steps in sequence: generates app icons (`build:icons`), compiles the source with `electron-vite build`, then packages everything using `electron-builder --mac`. The output is a `.app` bundle and a `.dmg` installer written to `dist/`.
 
 > **Note:** Apple requires apps distributed outside the Mac App Store to be code-signed and notarized to run without Gatekeeper warnings. For personal use or local testing, you can bypass this by right-clicking the app in Finder and choosing **Open**.
 
