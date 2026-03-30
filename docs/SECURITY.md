@@ -13,7 +13,7 @@ Relay is a macOS-only Electron desktop application that integrates git worktree 
 
 **Overall risk rating: MEDIUM**
 
-Relay has sound fundamentals: Electron's `contextIsolation` is enabled, `nodeIntegration` is disabled, file reads and writes are scoped to worktree paths, and no credentials are stored by the application. However, several issues warrant attention before broad enterprise deployment, most significantly the unsandboxed renderer, the full-environment PTY inheritance, and the unencrypted local data store.
+Relay has sound fundamentals: Electron's `contextIsolation` is enabled, `nodeIntegration` is disabled, file reads and writes are scoped to worktree paths, and no credentials are stored by the application. The renderer sandbox is now enabled for production builds. However, several issues still warrant attention before broad enterprise deployment, most significantly the full-environment PTY inheritance and the unencrypted local data store.
 
 ---
 
@@ -35,23 +35,21 @@ Relay has sound fundamentals: Electron's `contextIsolation` is enabled, `nodeInt
 
 ---
 
-## Finding 1: Renderer sandbox is disabled — MEDIUM
+## Finding 1: Renderer sandbox is disabled — ~~MEDIUM~~ RESOLVED
 
 **Location:** `src/main/window.ts:24`
+
+**Status:** Fixed. `sandbox` is now set conditionally via `app.isPackaged`:
 
 ```ts
 webPreferences: {
   nodeIntegration: false,
   contextIsolation: true,
-  sandbox: false,       // ← renderer runs unsandboxed
+  sandbox: app.isPackaged,   // true in production, false in dev
 }
 ```
 
-`sandbox: false` is required because `node-pty` is a native Node module that can only run in the main process, and electron-vite's dev server needs certain Node capabilities during development. In production the renderer itself has no Node access (contextIsolation is on, nodeIntegration is off), so the practical blast radius of a renderer compromise is limited to what can be done via the IPC bridge.
-
-However, an unsandboxed renderer means that a renderer-level exploit (e.g. a vulnerability in xterm.js, diff2html, or react-markdown triggered by malicious repository content) would not be contained by the OS-level sandbox that Electron's sandbox mode provides.
-
-**Recommendation:** Evaluate whether the dev-server dependency on `sandbox: false` can be removed for production builds. The native `node-pty` module does not require a sandboxed renderer; only certain dev-mode tooling does. A production build with `sandbox: true` would meaningfully reduce exploit surface.
+Production builds run with the OS-level renderer sandbox enabled. `sandbox: false` is retained only in dev mode for electron-vite HMR compatibility. The native `node-pty` module is unaffected as it runs exclusively in the main process.
 
 ---
 
@@ -239,7 +237,7 @@ The following security properties are correctly implemented:
 
 | Finding | Severity | Effort to Fix |
 |---|---|---|
-| Renderer sandbox disabled | MEDIUM | Medium |
+| ~~Renderer sandbox disabled~~ RESOLVED | ~~MEDIUM~~ | — |
 | PTY inherits full environment | MEDIUM | Low–Medium |
 | No path traversal guard on file I/O (fs:read-file, fs:write-file, git:diff-file) | MEDIUM | Low |
 | IPC channels not allowlisted | LOW | Low |
@@ -258,5 +256,5 @@ Before broad enterprise deployment, the following should be addressed in priorit
 
 1. Add path traversal guards to `fs:read-file` and `fs:write-file` (Finding 3) — trivial fix, eliminates a class of vulnerability
 2. Add an IPC channel allowlist to the preload bridge (Finding 4) — low effort, prevents future handler exposure
-3. Evaluate enabling `sandbox: true` for production builds (Finding 1) — more complex but meaningfully improves defense-in-depth
+3. ~~Evaluate enabling `sandbox: true` for production builds (Finding 1)~~ — **DONE**: production builds now run with `sandbox: true`
 4. Document the environment inheritance behavior for security-conscious users (Finding 2)
