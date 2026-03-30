@@ -1,5 +1,7 @@
 # Relay
 
+![Relay screenshot](assets/relay-screenshot.png)
+
 Relay is a macOS desktop application that pairs git worktrees with Claude Code. It gives you a dedicated workspace for each task branch — a Claude terminal, a file viewer, a diff viewer, and a shell — all within a single window.
 
 ## What it does
