@@ -37,6 +37,13 @@ export default function ManualTaskNotesPane({ groupId, task }: ManualTaskNotesPa
   const themeCompartment = useRef(new Compartment());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // notes:focus: move cursor into the editor
+  useEffect(() => {
+    const handler = () => viewRef.current?.focus();
+    window.addEventListener('notes:focus', handler);
+    return () => window.removeEventListener('notes:focus', handler);
+  }, []);
+
   // Listen for live theme changes
   useEffect(() => {
     function handleThemeChange(e: Event) {

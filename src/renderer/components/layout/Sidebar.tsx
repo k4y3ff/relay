@@ -136,10 +136,14 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
         if (item.kind === 'group') {
           toggleGroupCollapsed(item.groupId);
         } else {
-          if (item.task.type === 'branch') selectWorktree(item.task.worktree.path);
-          else selectManualTask(item.task.id);
+          if (item.task.type === 'branch') {
+            selectWorktree(item.task.worktree.path);
+            setTimeout(() => window.dispatchEvent(new CustomEvent('chat:focus')), 0);
+          } else {
+            selectManualTask(item.task.id);
+            setTimeout(() => window.dispatchEvent(new CustomEvent('notes:focus')), 0);
+          }
           setNavActive(false);
-          setTimeout(() => window.dispatchEvent(new CustomEvent('chat:focus')), 0);
         }
       } else if (e.key === 'Escape') {
         setNavActive(false);
