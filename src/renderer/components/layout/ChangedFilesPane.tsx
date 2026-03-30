@@ -116,7 +116,9 @@ export default function ChangedFilesPane({ style }: Props) {
   const [loading, setLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const fetchFiles = useCallback(async () => {
     if (!activeWorktreePath) {
@@ -160,9 +162,13 @@ export default function ChangedFilesPane({ style }: Props) {
     fetchAllFiles();
   }, [fetchFiles, fetchAllFiles]);
 
-  // Cmd+Shift+F: switch to the All Files tab
+  // Cmd+Shift+F: switch to the All Files tab and open search/keyboard-nav mode
   useEffect(() => {
-    return window.relay.on('focus:all-files', () => setView('all'));
+    return window.relay.on('focus:all-files', () => {
+      setView('all');
+      setIsSearching(true);
+      setSelectedIndex(0);
+    });
   }, []);
 
   // Auto-refresh every 3 seconds when window is focused
@@ -191,7 +197,21 @@ export default function ChangedFilesPane({ style }: Props) {
   const closeSearch = useCallback(() => {
     setIsSearching(false);
     setSearchQuery('');
+    setSelectedIndex(-1);
   }, []);
+
+  // Reset selection to top when query changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchQuery]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (selectedIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll<HTMLElement>('[data-navigable]');
+      items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex]);
 
   const filteredFiles = searchQuery
     ? allFiles.filter(p => {
@@ -211,7 +231,22 @@ export default function ChangedFilesPane({ style }: Props) {
             placeholder="Search files..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Escape') closeSearch(); }}
+            onKeyDown={e => {
+              if (e.key === 'Escape') { closeSearch(); return; }
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedIndex(i => Math.min(i + 1, filteredFiles.length - 1));
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedIndex(i => Math.max(i - 1, 0));
+              } else if (e.key === 'Enter') {
+                const path = filteredFiles[selectedIndex];
+                if (path) {
+                  openDiffTab({ path, status: 'R', added: 0, deleted: 0 });
+                  closeSearch();
+                }
+              }
+            }}
           />
         ) : (
           <div className="files-tabs">
@@ -252,20 +287,21 @@ export default function ChangedFilesPane({ style }: Props) {
         </button>
       </div>
 
-      <div className="changed-files-list">
+      <div className="changed-files-list" ref={listRef}>
         {!activeWorktreePath ? (
           <div className="changed-files-empty">Select a worktree to see {view === 'all' ? 'files' : 'changes'}</div>
         ) : view === 'all' ? (
           allFiles.length === 0 && !loading ? (
             <div className="changed-files-empty">No files found</div>
-          ) : searchQuery ? (
+          ) : isSearching ? (
             filteredFiles.length === 0 ? (
               <div className="changed-files-empty">No files match</div>
             ) : (
-              filteredFiles.map(p => (
+              filteredFiles.map((p, i) => (
                 <button
                   key={p}
-                  className={`all-files-search-result${activePaneTab === p ? ' changed-files-row-active' : ''}`}
+                  data-navigable="true"
+                  className={`all-files-search-result${activePaneTab === p || i === selectedIndex ? ' changed-files-row-active' : ''}`}
                   title={p}
                   onClick={() => openDiffTab({ path: p, status: 'R', added: 0, deleted: 0 })}
                 >
