@@ -37,6 +37,13 @@ function buildAppMenu(win: BrowserWindow): void {
           if (!win.isDestroyed()) win.webContents.send('focus:all-files');
         },
       }),
+      new MenuItem({
+        label: 'Focus Terminal',
+        accelerator: 'CmdOrCtrl+Shift+T',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:terminal');
+        },
+      }),
       new MenuItem({ type: 'separator' }),
       new MenuItem({ role: 'quit' }),
     ],

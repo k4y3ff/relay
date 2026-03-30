@@ -159,6 +159,13 @@ export default function TerminalPane({ style }: Props) {
     return () => window.removeEventListener('keydown', handler);
   }, [activeTabId]);
 
+  // ⌘⇧T — focus the active terminal shell
+  useEffect(() => {
+    return window.relay.on('focus:terminal', () => {
+      shellRefsMap.current.get(activeTabId)?.focus();
+    });
+  }, [activeTabId]);
+
   // Toolbar path: ~/path/to/worktree [branch]
   const displayPath = useMemo(() => {
     if (!activeWorktreePath) return '';
