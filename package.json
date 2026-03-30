@@ -47,6 +47,7 @@
     "@codemirror/view": "^6.40.0",
     "@uiw/codemirror-theme-dracula": "^4.25.9",
     "@uiw/codemirror-theme-github": "^4.25.9",
+    "@uiw/codemirror-theme-monokai": "^4.25.9",
     "@uiw/codemirror-theme-nord": "^4.25.9",
     "@uiw/codemirror-theme-solarized": "^4.25.9",
     "@xterm/addon-fit": "^0.11.0",
