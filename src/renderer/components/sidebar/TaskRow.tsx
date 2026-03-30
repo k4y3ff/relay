@@ -5,9 +5,10 @@ import ManualTaskRow from './ManualTaskRow';
 interface TaskRowProps {
   groupId: string;
   task: Task;
+  highlighted?: boolean;
 }
 
-export default function TaskRow({ groupId, task }: TaskRowProps) {
+export default function TaskRow({ groupId, task, highlighted }: TaskRowProps) {
   function handleDragStart(e: React.DragEvent) {
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('application/x-relay-task', JSON.stringify({ taskId: task.id, groupId }));
@@ -16,8 +17,8 @@ export default function TaskRow({ groupId, task }: TaskRowProps) {
   return (
     <div draggable onDragStart={handleDragStart} style={{ cursor: 'grab' }}>
       {task.type === 'branch'
-        ? <BranchTaskRow groupId={groupId} task={task} />
-        : <ManualTaskRow groupId={groupId} task={task} />}
+        ? <BranchTaskRow groupId={groupId} task={task} highlighted={highlighted} />
+        : <ManualTaskRow groupId={groupId} task={task} highlighted={highlighted} />}
     </div>
   );
 }

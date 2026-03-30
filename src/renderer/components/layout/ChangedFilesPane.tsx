@@ -116,7 +116,21 @@ export default function ChangedFilesPane({ style }: Props) {
   const [loading, setLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [changesNavActive, setChangesNavActive] = useState(false);
+  const [changesSelectedIndex, setChangesSelectedIndex] = useState(-1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  // Refs so IPC handlers can read current nav state without stale closures
+  const isSearchingRef = useRef(false);
+  const changesNavActiveRef = useRef(false);
+  useEffect(() => { isSearchingRef.current = isSearching; }, [isSearching]);
+  useEffect(() => { changesNavActiveRef.current = changesNavActive; }, [changesNavActive]);
+  // Broadcast nav state so ChatPane can yield when right pane is active
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('right-pane:nav-changed', { detail: isSearching || changesNavActive }));
+  }, [isSearching, changesNavActive]);
 
   const fetchFiles = useCallback(async () => {
     if (!activeWorktreePath) {
@@ -160,6 +174,81 @@ export default function ChangedFilesPane({ style }: Props) {
     fetchAllFiles();
   }, [fetchFiles, fetchAllFiles]);
 
+
+  // Cmd+Shift+[ / Cmd+Shift+]: navigate tabs only when right pane nav mode is active
+  useEffect(() => {
+    const offPrev = window.relay.on('tab:prev', () => {
+      if (!isSearchingRef.current && !changesNavActiveRef.current) return;
+      setView(v => {
+        if (v === 'changes') {
+          setIsSearching(true);
+          setSelectedIndex(0);
+          return 'all';
+        }
+        return v;
+      });
+    });
+    const offNext = window.relay.on('tab:next', () => {
+      if (!isSearchingRef.current && !changesNavActiveRef.current) return;
+      setView(v => {
+        if (v === 'all') {
+          setChangesNavActive(true);
+          setChangesSelectedIndex(0);
+          return 'changes';
+        }
+        return v;
+      });
+    });
+    return () => { offPrev(); offNext(); };
+  }, []);
+
+  // Cmd+Shift+F: switch to the All Files tab and open search/keyboard-nav mode
+  useEffect(() => {
+    return window.relay.on('focus:all-files', () => {
+      window.dispatchEvent(new CustomEvent('nav:deactivate'));
+      setView('all');
+      setIsSearching(true);
+      setSelectedIndex(0);
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    });
+  }, []);
+
+  // Cmd+Shift+D: switch to the Changes tab and activate keyboard navigation
+  useEffect(() => {
+    return window.relay.on('focus:changes-tab', () => {
+      window.dispatchEvent(new CustomEvent('nav:deactivate'));
+      setView('changes');
+      setChangesNavActive(true);
+      setChangesSelectedIndex(0);
+    });
+  }, []);
+
+  // Keyboard navigation for the Changes tab
+  useEffect(() => {
+    if (!changesNavActive) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setChangesSelectedIndex(i => Math.min(i + 1, files.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setChangesSelectedIndex(i => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter') {
+        const file = files[changesSelectedIndex];
+        if (file) { openDiffTab(file); setChangesNavActive(false); }
+      } else if (e.key === 'Escape') {
+        setChangesNavActive(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [changesNavActive, changesSelectedIndex, files, openDiffTab]);
+
+  // Steal focus from xterm (or anywhere else) when Changes nav mode activates
+  useEffect(() => {
+    if (changesNavActive) listRef.current?.focus();
+  }, [changesNavActive]);
+
   // Auto-refresh every 3 seconds when window is focused
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -186,7 +275,29 @@ export default function ChangedFilesPane({ style }: Props) {
   const closeSearch = useCallback(() => {
     setIsSearching(false);
     setSearchQuery('');
+    setSelectedIndex(-1);
   }, []);
+
+  // Reset selection to top when query changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [searchQuery]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (selectedIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll<HTMLElement>('[data-navigable]');
+      items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [selectedIndex]);
+
+  // Scroll selected Changes item into view
+  useEffect(() => {
+    if (changesSelectedIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll<HTMLElement>('[data-navigable]');
+      items[changesSelectedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [changesSelectedIndex]);
 
   const filteredFiles = searchQuery
     ? allFiles.filter(p => {
@@ -201,12 +312,29 @@ export default function ChangedFilesPane({ style }: Props) {
       <div className="changed-files-header">
         {isSearching && view === 'all' ? (
           <input
+            ref={searchInputRef}
             className="all-files-search-input"
             autoFocus
             placeholder="Search files..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Escape') closeSearch(); }}
+            onKeyDown={e => {
+              if (e.key === 'Escape') { closeSearch(); return; }
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedIndex(i => Math.min(i + 1, filteredFiles.length - 1));
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedIndex(i => Math.max(i - 1, 0));
+              } else if (e.key === 'Enter') {
+                const path = filteredFiles[selectedIndex];
+                if (path) {
+                  openDiffTab({ path, status: 'R', added: 0, deleted: 0 });
+                  closeSearch();
+                  setTimeout(() => window.dispatchEvent(new CustomEvent('viewer:focus')), 0);
+                }
+              }
+            }}
           />
         ) : (
           <div className="files-tabs">
@@ -247,20 +375,21 @@ export default function ChangedFilesPane({ style }: Props) {
         </button>
       </div>
 
-      <div className="changed-files-list">
+      <div className="changed-files-list" ref={listRef} tabIndex={-1}>
         {!activeWorktreePath ? (
           <div className="changed-files-empty">Select a worktree to see {view === 'all' ? 'files' : 'changes'}</div>
         ) : view === 'all' ? (
           allFiles.length === 0 && !loading ? (
             <div className="changed-files-empty">No files found</div>
-          ) : searchQuery ? (
+          ) : isSearching ? (
             filteredFiles.length === 0 ? (
               <div className="changed-files-empty">No files match</div>
             ) : (
-              filteredFiles.map(p => (
+              filteredFiles.map((p, i) => (
                 <button
                   key={p}
-                  className={`all-files-search-result${activePaneTab === p ? ' changed-files-row-active' : ''}`}
+                  data-navigable="true"
+                  className={`all-files-search-result${activePaneTab === p || i === selectedIndex ? ' changed-files-row-active' : ''}`}
                   title={p}
                   onClick={() => openDiffTab({ path: p, status: 'R', added: 0, deleted: 0 })}
                 >
@@ -284,10 +413,11 @@ export default function ChangedFilesPane({ style }: Props) {
         ) : files.length === 0 && !loading ? (
           <div className="changed-files-empty">No changes since last commit</div>
         ) : (
-          files.map((file) => (
+          files.map((file, i) => (
             <button
               key={file.path}
-              className={`changed-files-row${activePaneTab === file.path ? ' changed-files-row-active' : ''}`}
+              data-navigable="true"
+              className={`changed-files-row${activePaneTab === file.path || (changesNavActive && i === changesSelectedIndex) ? ' changed-files-row-active' : ''}`}
               onClick={() => openDiffTab(file)}
               title={file.path}
             >

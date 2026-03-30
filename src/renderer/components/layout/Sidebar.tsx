@@ -8,10 +8,15 @@ import type { GroupBy } from '../sidebar/SidebarFilterMenu';
 import type { TaskGroup, TaskStatus, Task } from '../../types/repo';
 
 export default function Sidebar({ style }: { style?: React.CSSProperties }) {
-  const { taskGroups, loading, createTaskGroup } = useRepo();
+  const { taskGroups, loading, createTaskGroup, collapsedGroups, toggleGroupCollapsed, selectWorktree, selectManualTask } = useRepo();
   const [isCreating, setIsCreating] = useState(false);
   const [draftName, setDraftName] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Sidebar keyboard navigation state
+  const [navActive, setNavActive] = useState(false);
+  const [navIndex, setNavIndex] = useState(0);
 
   const [groupBy, setGroupBy] = useState<GroupBy>('task-group');
   const [filterStatuses, setFilterStatuses] = useState<Set<TaskStatus>>(new Set());
@@ -86,6 +91,85 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
       .map((s) => ({ label: STATUS_LABELS[s], entries: map.get(s)! }));
   }, [groupBy, allFilteredTasks]);
 
+  // Flat ordered list of navigable items (groups + visible tasks)
+  const navItems = useMemo(() => {
+    if (groupBy !== 'task-group') return [];
+    const items: Array<{ kind: 'group'; groupId: string } | { kind: 'task'; groupId: string; task: Task }> = [];
+    for (const group of filteredTaskGroups) {
+      items.push({ kind: 'group', groupId: group.id });
+      if (!collapsedGroups.has(group.id)) {
+        for (const task of group.tasks) {
+          items.push({ kind: 'task', groupId: group.id, task });
+        }
+      }
+    }
+    return items;
+  }, [filteredTaskGroups, collapsedGroups, groupBy]);
+
+  // Clamp navIndex when the item list shrinks (e.g. group collapses)
+  useEffect(() => {
+    if (navItems.length > 0) setNavIndex((i) => Math.min(i, navItems.length - 1));
+  }, [navItems.length]);
+
+  // Cmd+Shift+G: activate sidebar navigation
+  useEffect(() => {
+    return window.relay.on('focus:sidebar', () => {
+      setNavActive(true);
+      setNavIndex(0);
+      setTimeout(() => scrollRef.current?.focus(), 0);
+    });
+  }, []);
+
+  useEffect(() => {
+    const handler = () => setNavActive(false);
+    window.addEventListener('nav:deactivate', handler);
+    return () => window.removeEventListener('nav:deactivate', handler);
+  }, []);
+
+  // Arrow / Enter / Escape handling while nav is active
+  useEffect(() => {
+    if (!navActive) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setNavIndex((i) => Math.min(i + 1, navItems.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setNavIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter') {
+        const item = navItems[navIndex];
+        if (!item) return;
+        if (item.kind === 'group') {
+          toggleGroupCollapsed(item.groupId);
+        } else {
+          if (item.task.type === 'branch') {
+            selectWorktree(item.task.worktree.path);
+            setTimeout(() => window.dispatchEvent(new CustomEvent('chat:focus')), 0);
+          } else {
+            selectManualTask(item.task.id);
+            setTimeout(() => window.dispatchEvent(new CustomEvent('notes:focus')), 0);
+          }
+          setNavActive(false);
+        }
+      } else if (e.key === 'Escape') {
+        setNavActive(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [navActive, navIndex, navItems, toggleGroupCollapsed, selectWorktree, selectManualTask]);
+
+  // Scroll the highlighted item into view
+  useEffect(() => {
+    if (navActive) {
+      document.querySelector('[data-nav-highlighted]')?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [navIndex, navActive]);
+
+  const currentNavItem = navActive ? navItems[navIndex] : null;
+  const highlightedGroupId = currentNavItem?.kind === 'group' ? currentNavItem.groupId : null;
+  const highlightedTaskId = currentNavItem?.kind === 'task' ? currentNavItem.task.id : null;
+
   return (
     <div className="sidebar flex flex-col h-full relative" style={style}>
       {/* Header */}
@@ -127,7 +211,7 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
       </div>
 
       {/* Task group list */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div ref={scrollRef} tabIndex={-1} className="flex-1 overflow-y-auto overflow-x-hidden outline-none">
         {loading && (
           <p className="text-[14px] text-[var(--color-mac-muted)] px-4 py-3">Loading…</p>
         )}
@@ -140,7 +224,12 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
               </p>
             )}
             {filteredTaskGroups.map((group) => (
-              <TaskGroupSection key={group.id} group={group} />
+              <TaskGroupSection
+                key={group.id}
+                group={group}
+                highlightedGroupId={highlightedGroupId}
+                highlightedTaskId={highlightedTaskId}
+              />
             ))}
           </>
         )}

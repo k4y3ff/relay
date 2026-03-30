@@ -65,6 +65,12 @@ export default function TerminalEmbed({ terminalId, worktreePath, active }: Prop
     };
     window.addEventListener('terminal:refit', refit);
 
+    const onFocus = (e: Event) => {
+      const { terminalId: tid } = (e as CustomEvent<{ terminalId: string }>).detail;
+      if (tid === terminalId) termRef.current?.focus();
+    };
+    window.addEventListener('terminal:focus', onFocus);
+
     const observer = new ResizeObserver(() => {
       if (!container.offsetWidth || !container.offsetHeight) return;
       fitAddon.fit();
@@ -78,6 +84,7 @@ export default function TerminalEmbed({ terminalId, worktreePath, active }: Prop
 
     return () => {
       window.removeEventListener('terminal:refit', refit);
+      window.removeEventListener('terminal:focus', onFocus);
       offData();
       onTermData.dispose();
       onKey.dispose();

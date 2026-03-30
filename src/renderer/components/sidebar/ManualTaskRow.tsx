@@ -7,9 +7,10 @@ import StatusDot from './StatusDot';
 interface ManualTaskRowProps {
   groupId: string;
   task: ManualTask;
+  highlighted?: boolean;
 }
 
-export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
+export default function ManualTaskRow({ groupId, task, highlighted }: ManualTaskRowProps) {
   const { removeTask, updateTaskStatus, renameTask, selectManualTask, activeManualTaskId } = useRepo();
   const [renaming, setRenaming] = useState(false);
   const [draftTitle, setDraftTitle] = useState('');
@@ -46,7 +47,8 @@ export default function ManualTaskRow({ groupId, task }: ManualTaskRowProps) {
   return (
     <div
       style={{ height: 30, minHeight: 30 }}
-      className={`group flex items-center justify-between pl-6 pr-3 text-[14px] select-none cursor-default ${isActive ? 'worktree-row-active text-[var(--color-mac-text)]' : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'}`}
+      data-nav-highlighted={highlighted || undefined}
+      className={`group flex items-center justify-between pl-6 pr-3 text-[14px] select-none cursor-default ${isActive ? 'worktree-row-active text-[var(--color-mac-text)]' : highlighted ? 'bg-[var(--color-mac-surface2)] text-[var(--color-mac-text)]' : 'text-[var(--color-mac-muted)] hover:bg-[var(--color-mac-surface2)] hover:text-[var(--color-mac-text)]'}`}
       onClick={() => { if (!renaming) selectManualTask(task.id); }}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">

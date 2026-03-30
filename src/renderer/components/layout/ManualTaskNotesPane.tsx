@@ -36,6 +36,17 @@ export default function ManualTaskNotesPane({ groupId, task }: ManualTaskNotesPa
   const viewRef = useRef<EditorView | null>(null);
   const themeCompartment = useRef(new Compartment());
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingFocusRef = useRef(false);
+
+  // notes:focus: focus immediately if the editor is ready, otherwise queue it
+  useEffect(() => {
+    const handler = () => {
+      if (viewRef.current) viewRef.current.focus();
+      else pendingFocusRef.current = true;
+    };
+    window.addEventListener('notes:focus', handler);
+    return () => window.removeEventListener('notes:focus', handler);
+  }, []);
 
   // Listen for live theme changes
   useEffect(() => {
@@ -94,6 +105,10 @@ export default function ManualTaskNotesPane({ groupId, task }: ManualTaskNotesPa
 
       const view = new EditorView({ state, parent: editorRef.current });
       viewRef.current = view;
+      if (pendingFocusRef.current) {
+        pendingFocusRef.current = false;
+        view.focus();
+      }
     });
 
     return () => {

@@ -159,6 +159,55 @@ export default function ChatPane() {
   const activeChatTabs = activeWorktreePath ? (chatTabsByPath.get(activeWorktreePath) ?? []) : [];
   const activeChatTabId = activeWorktreePath ? (activeChatTabByPath.get(activeWorktreePath) ?? '') : '';
 
+  // Cmd+Shift+C (IPC) or chat:focus (DOM event): focus the active chat terminal
+  useEffect(() => {
+    const focus = () => {
+      selectPaneTab('chat');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('terminal:focus', { detail: { terminalId: activeChatTabId } }));
+      }, 0);
+    };
+    const offIpc = window.relay.on('focus:chat-terminal', focus);
+    window.addEventListener('chat:focus', focus);
+    return () => { offIpc(); window.removeEventListener('chat:focus', focus); };
+  }, [activeChatTabId, selectPaneTab]);
+
+  // Track whether the right pane (ChangedFilesPane) is in keyboard-nav mode
+  const rightPaneNavActiveRef = useRef(false);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      rightPaneNavActiveRef.current = (e as CustomEvent<boolean>).detail;
+    };
+    window.addEventListener('right-pane:nav-changed', handler);
+    return () => window.removeEventListener('right-pane:nav-changed', handler);
+  }, []);
+
+  // Cmd+Shift+[ / Cmd+Shift+]: navigate left/right through the tab bar
+  useEffect(() => {
+    const navigate = (dir: -1 | 1) => {
+      if (rightPaneNavActiveRef.current) return;
+      if (!activeWorktreePath) return;
+      const allTabs = [...activeChatTabs, ...diffTabs.map((t) => t.path)];
+      const currentIdx = activePaneTab === 'chat'
+        ? activeChatTabs.indexOf(activeChatTabId)
+        : activeChatTabs.length + diffTabs.findIndex((t) => t.path === activePaneTab);
+      const nextIdx = currentIdx + dir;
+      if (nextIdx < 0 || nextIdx >= allTabs.length) return;
+      if (nextIdx < activeChatTabs.length) {
+        const newTabId = allTabs[nextIdx];
+        setActiveChatTabByPath((prev) => new Map(prev).set(activeWorktreePath, newTabId));
+        selectPaneTab('chat');
+        setTimeout(() => window.dispatchEvent(new CustomEvent('terminal:focus', { detail: { terminalId: newTabId } })), 0);
+      } else {
+        selectPaneTab(allTabs[nextIdx]);
+        setTimeout(() => window.dispatchEvent(new CustomEvent('viewer:focus')), 0);
+      }
+    };
+    const offPrev = window.relay.on('tab:prev', () => navigate(-1));
+    const offNext = window.relay.on('tab:next', () => navigate(1));
+    return () => { offPrev(); offNext(); };
+  }, [activeChatTabs, activeChatTabId, diffTabs, activePaneTab, activeWorktreePath, setActiveChatTabByPath, selectPaneTab]);
+
   return (
     <div className="chat-pane">
       {activeManualTask && activeManualTaskGroupId && (
@@ -180,6 +229,7 @@ export default function ChatPane() {
                   return next;
                 });
                 selectPaneTab('chat');
+                setTimeout(() => window.dispatchEvent(new CustomEvent('terminal:focus', { detail: { terminalId: tabId } })), 0);
               }}
               onContextMenu={(e) => handleChatTabContextMenu(e, tabId)}
             >
@@ -221,7 +271,10 @@ export default function ChatPane() {
             <button
               key={file.path}
               className={`chat-tab${activePaneTab === file.path ? ' chat-tab-active' : ''}`}
-              onClick={() => selectPaneTab(file.path)}
+              onClick={() => {
+                selectPaneTab(file.path);
+                setTimeout(() => window.dispatchEvent(new CustomEvent('viewer:focus')), 0);
+              }}
               title={file.path}
             >
               {dirtyTabs.has(file.path) && <span className="chat-tab-dirty-dot" />}

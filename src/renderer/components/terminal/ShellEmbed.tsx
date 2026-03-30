@@ -14,6 +14,7 @@ interface Props {
 export interface ShellEmbedHandle {
   clear(): void;
   refit(): void;
+  focus(): void;
 }
 
 const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, ref) => {
@@ -24,6 +25,7 @@ const ShellEmbed = forwardRef<ShellEmbedHandle, Props>(({ tabId, cwd, active }, 
 
   useImperativeHandle(ref, () => ({
     clear: () => termRef.current?.clear(),
+    focus: () => termRef.current?.focus(),
     refit: () => {
       const container = containerRef.current;
       if (!container?.offsetWidth || !container?.offsetHeight) return;

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
@@ -69,6 +69,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
   const viewRef = useRef<EditorView | null>(null);
   const themeCompartment = useRef(new Compartment());
   const wrapCompartment = useRef(new Compartment());
+  const pendingFocusRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isBinary, setIsBinary] = useState(false);
@@ -116,6 +117,28 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
     return () => window.removeEventListener('settings:editor-word-wrap-changed', handleWrapChange);
   }, []);
 
+  // Apply pending focus once the editor container transitions from display:none to visible.
+  // Calling view.focus() inside the .then() callback doesn't work because setLoading(false)
+  // is batched — the div is still display:none when the editor is created.
+  useEffect(() => {
+    if (!loading && pendingFocusRef.current && viewRef.current) {
+      pendingFocusRef.current = false;
+      viewRef.current.focus();
+    }
+  }, [loading]);
+
+  // viewer:focus: focus immediately if editor is ready, otherwise queue it.
+  // useLayoutEffect ensures the listener is registered synchronously after mount,
+  // before any setTimeout(0) callback in ChangedFilesPane can fire.
+  useLayoutEffect(() => {
+    const handler = () => {
+      if (viewRef.current) viewRef.current.focus();
+      else pendingFocusRef.current = true;
+    };
+    window.addEventListener('viewer:focus', handler);
+    return () => window.removeEventListener('viewer:focus', handler);
+  }, []);
+
   const save = useCallback(async () => {
     if (!viewRef.current) return;
     const content = viewRef.current.state.doc.toString();
@@ -126,6 +149,11 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
       console.error('Failed to save file:', err);
     }
   }, [worktreePath, filePath, markTabClean]);
+
+  // Cmd+S from anywhere (menu accelerator) saves the file
+  useEffect(() => {
+    return window.relay.on('file:save', () => { void save(); });
+  }, [save]);
 
   useEffect(() => {
     let stale = false;
@@ -188,6 +216,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
 
     return () => {
       stale = true;
+      pendingFocusRef.current = false;
       if (viewRef.current) {
         viewRef.current.destroy();
         viewRef.current = null;

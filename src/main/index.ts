@@ -23,6 +23,62 @@ function buildAppMenu(win: BrowserWindow): void {
           if (!win.isDestroyed()) win.webContents.send('open:settings');
         },
       }),
+      new MenuItem({
+        label: 'Focus Claude',
+        accelerator: 'CmdOrCtrl+Shift+C',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:chat-terminal');
+        },
+      }),
+      new MenuItem({
+        label: 'Show Changes',
+        accelerator: 'CmdOrCtrl+Shift+D',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:changes-tab');
+        },
+      }),
+      new MenuItem({
+        label: 'Show All Files',
+        accelerator: 'CmdOrCtrl+Shift+F',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:all-files');
+        },
+      }),
+      new MenuItem({
+        label: 'Focus Terminal',
+        accelerator: 'CmdOrCtrl+Shift+T',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:terminal');
+        },
+      }),
+      new MenuItem({
+        label: 'Focus Task Groups',
+        accelerator: 'CmdOrCtrl+Shift+G',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('focus:sidebar');
+        },
+      }),
+      new MenuItem({
+        label: 'Previous Tab',
+        accelerator: 'CmdOrCtrl+Shift+[',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('tab:prev');
+        },
+      }),
+      new MenuItem({
+        label: 'Next Tab',
+        accelerator: 'CmdOrCtrl+Shift+]',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('tab:next');
+        },
+      }),
+      new MenuItem({
+        label: 'Save',
+        accelerator: 'CmdOrCtrl+S',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('file:save');
+        },
+      }),
       new MenuItem({ type: 'separator' }),
       new MenuItem({ role: 'quit' }),
     ],
@@ -42,8 +98,24 @@ function buildAppMenu(win: BrowserWindow): void {
     ],
   });
 
+  // Help menu — macOS routes Cmd+? here by convention
+  const helpMenu = new MenuItem({
+    label: 'Help',
+    role: 'help',
+    submenu: [
+      new MenuItem({
+        label: 'Keyboard Shortcuts',
+        accelerator: 'CmdOrCtrl+?',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('open:shortcuts-modal');
+        },
+      }),
+    ],
+  });
+
   menu.append(appMenu);
   menu.append(editMenu);
+  menu.append(helpMenu);
   Menu.setApplicationMenu(menu);
 }
 
