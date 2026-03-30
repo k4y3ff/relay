@@ -3,7 +3,7 @@
 **Subject:** Relay v0.1.0
 **Evaluator role:** Lead Security Engineer
 **Scope:** Enterprise suitability assessment
-**Date:** 2026-03-28
+**Date:** 2026-03-29
 
 ---
 
@@ -57,11 +57,24 @@ However, an unsandboxed renderer means that a renderer-level exploit (e.g. a vul
 
 ## Finding 2: PTY sessions inherit the full parent environment — MEDIUM
 
-**Location:** `src/main/terminal.ts:27`
+**Location:** `src/main/terminal.ts:32` and `src/main/shell.ts:21`
 
 ```ts
+// TerminalManager (terminal.ts:27–33)
 const proc = pty.spawn(shell, ['-l', '-c', 'claude'], {
+  name: 'xterm-256color',
+  cols,
+  rows,
   cwd: worktreePath,
+  env: process.env as Record<string, string>,
+});
+
+// ShellManager (shell.ts:16–22)
+const proc = pty.spawn(shell, ['-l'], {
+  name: 'xterm-256color',
+  cols,
+  rows,
+  cwd,
   env: process.env as Record<string, string>,
 });
 ```
@@ -80,19 +93,27 @@ This is consistent with how developers use a terminal directly, so it is not une
 
 ## Finding 3: File paths are not fully validated against worktree root — MEDIUM
 
-**Location:** `src/main/ipc.ts:384–389` and `src/main/ipc.ts:396–400`
+**Location:** `src/main/ipc.ts:618–640` and `src/main/ipc.ts:642–665`
 
 ```ts
-// fs:read-file
+// fs:read-file (ipc.ts:623–624)
 const fullPath = path.join(worktreePath, filePath);
 const buf = await readFile(fullPath);
 
-// fs:write-file
+// fs:write-file (ipc.ts:637–638)
 const fullPath = path.join(worktreePath, filePath);
 await writeFile(fullPath, content, 'utf-8');
+
+// git:diff-file — untracked branch (ipc.ts:650–655)
+const fullPath = path.join(worktreePath, filePath);
+const { stdout } = await execFileAsync(
+  'git',
+  ['diff', '--no-index', '/dev/null', fullPath],
+  { cwd: worktreePath }
+).catch((e: { stdout: string }) => ({ stdout: e.stdout ?? '' }));
 ```
 
-`path.join` resolves `..` components, meaning a renderer-supplied `filePath` of `../../etc/passwd` would resolve to a path outside the worktree. While `contextIsolation` prevents arbitrary JavaScript from calling these handlers, a compromised renderer (or a renderer tricked via malicious repo content into invoking file operations on attacker-controlled paths) could read or overwrite files outside the intended worktree.
+`path.join` resolves `..` components, meaning a renderer-supplied `filePath` of `../../etc/passwd` would resolve to a path outside the worktree. All three handlers — `fs:read-file`, `fs:write-file`, and the untracked branch of `git:diff-file` — share this pattern. The tracked-file branch of `git:diff-file` passes `filePath` directly as a git argument (safe from shell injection, but the same traversal logic applies). While `contextIsolation` prevents arbitrary JavaScript from calling these handlers, a compromised renderer (or a renderer tricked via malicious repo content into invoking file operations on attacker-controlled paths) could read or overwrite files outside the intended worktree.
 
 **Recommendation:** Add an explicit containment check before I/O operations:
 
@@ -140,9 +161,10 @@ electron-store persists application data to `~/Library/Application Support/relay
 
 - Absolute paths to git repositories and worktree directories
 - Task group names and branch names
-- User preferences
+- User preferences (theme, editor word-wrap, notification and sound settings)
+- `customSoundPath` — a user-supplied absolute file path to a custom notification sound
 
-No credentials, tokens, or file contents are stored. The paths and names could be sensitive in high-security environments where the existence of certain projects is itself confidential.
+No credentials, tokens, or file contents are stored. The paths and names could be sensitive in high-security environments where the existence of certain projects is itself confidential. The `customSoundPath` field is a new addition that stores an arbitrary user-supplied filesystem path in plaintext.
 
 **Recommendation:** For regulated environments, consider enabling electron-store's built-in encryption (`encryptionKey` option) or noting in deployment guidance that the config file contains repository path metadata.
 
@@ -158,7 +180,40 @@ The `menu:show-context-menu` handler builds a native macOS menu from renderer-su
 
 ---
 
-## Finding 7: Claude response completion detection is heuristic — INFORMATIONAL
+## Finding 7: `shell:open-path` opens arbitrary paths — LOW
+
+**Location:** `src/main/ipc.ts:555–557`
+
+```ts
+ipcMain.handle('shell:open-path', (_event, { path: p }: { path: string }): void => {
+  shell.openPath(p);
+});
+```
+
+The `shell:open-path` handler accepts a renderer-supplied path and opens it via the macOS default application with no validation. This is used to reveal files in Finder. A renderer-side attacker could pass any path — including sensitive files outside the worktree — causing them to be opened in whatever application the OS associates with that file type. The practical impact is limited to UI-level interaction (no data exfiltration over the IPC bridge), but it bypasses the intended worktree scope.
+
+**Recommendation:** Validate that `p` resolves to a path within the configured worktrees directory before calling `shell.openPath`.
+
+---
+
+## Finding 8: No Content-Security-Policy in renderer HTML — INFORMATIONAL
+
+**Location:** `src/renderer/index.html`
+
+The renderer's `index.html` has no `Content-Security-Policy` meta tag. In production, `nodeIntegration: false`, `contextIsolation: true`, and the absence of remote URLs make XSS difficult to exploit. However, a CSP would add a further layer of defense against script injection from malicious repository content rendered by the app (e.g. via react-markdown, diff2html, or xterm.js).
+
+**Recommendation:** Add a restrictive CSP:
+
+```html
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+```
+
+(`unsafe-inline` for styles is typically necessary for CSS-in-JS solutions like Tailwind/Emotion.)
+
+---
+
+## Finding 9: Claude response completion detection is heuristic — INFORMATIONAL
 
 **Location:** `src/main/terminal.ts:36–48`
 
@@ -186,10 +241,12 @@ The following security properties are correctly implemented:
 |---|---|---|
 | Renderer sandbox disabled | MEDIUM | Medium |
 | PTY inherits full environment | MEDIUM | Low–Medium |
-| No path traversal guard on file I/O | MEDIUM | Low |
+| No path traversal guard on file I/O (fs:read-file, fs:write-file, git:diff-file) | MEDIUM | Low |
 | IPC channels not allowlisted | LOW | Low |
 | Data store unencrypted | LOW | Low |
 | Context menu labels unvalidated | LOW | Negligible |
+| shell:open-path opens arbitrary paths | LOW | Low |
+| No Content-Security-Policy in renderer | INFORMATIONAL | Low |
 
 ---
 
