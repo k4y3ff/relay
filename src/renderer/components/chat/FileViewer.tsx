@@ -8,6 +8,7 @@ import { githubDark, githubLight } from '@uiw/codemirror-theme-github';
 import { dracula } from '@uiw/codemirror-theme-dracula';
 import { nord } from '@uiw/codemirror-theme-nord';
 import { solarizedDark, solarizedLight } from '@uiw/codemirror-theme-solarized';
+import { monokai } from '@uiw/codemirror-theme-monokai';
 import { javascript } from '@codemirror/lang-javascript';
 import { css } from '@codemirror/lang-css';
 import { html } from '@codemirror/lang-html';
@@ -37,6 +38,7 @@ function getThemeExtension(themeId: string) {
     case 'nord': return nord;
     case 'solarized-dark': return solarizedDark;
     case 'solarized-light': return solarizedLight;
+    case 'monokai': return monokai;
     default: return oneDark;
   }
 }
@@ -74,12 +76,14 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isBinary, setIsBinary] = useState(false);
   const [themeId, setThemeId] = useState('one-dark');
+  const themeIdRef = useRef('one-dark');
   const [wordWrap, setWordWrap] = useState(false);
   const isDirty = dirtyTabs.has(filePath);
 
   // Load saved settings on mount
   useEffect(() => {
     window.relay.invoke('settings:get-editor-theme').then((val) => {
+      themeIdRef.current = val as string;
       setThemeId(val as string);
     });
     window.relay.invoke('settings:get-editor-word-wrap').then((val) => {
@@ -91,6 +95,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
   useEffect(() => {
     function handleThemeChange(e: Event) {
       const newThemeId = (e as CustomEvent<string>).detail;
+      themeIdRef.current = newThemeId;
       setThemeId(newThemeId);
       if (viewRef.current) {
         viewRef.current.dispatch({
@@ -176,7 +181,7 @@ export default function FileViewer({ worktreePath, filePath }: Props) {
         const langExt = getLanguageExtension(ext);
 
         const extensions = [
-          themeCompartment.current.of(getThemeExtension(themeId)),
+          themeCompartment.current.of(getThemeExtension(themeIdRef.current)),
           wrapCompartment.current.of(wordWrap ? EditorView.lineWrapping : []),
           history(),
           lineNumbers(),

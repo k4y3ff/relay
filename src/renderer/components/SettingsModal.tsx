@@ -20,6 +20,7 @@ const EDITOR_THEMES: { id: string; label: string }[] = [
   { id: 'nord', label: 'Nord' },
   { id: 'solarized-dark', label: 'Solarized Dark' },
   { id: 'solarized-light', label: 'Solarized Light' },
+  { id: 'monokai', label: 'Monokai' },
 ];
 
 export default function SettingsModal({ onClose }: Props) {
