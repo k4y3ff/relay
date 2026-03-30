@@ -166,8 +166,26 @@ export default function ChangedFilesPane({ style }: Props) {
 
   // Cmd+Shift+[ / Cmd+Shift+]: navigate between All Files (left) and Changes (right)
   useEffect(() => {
-    const offPrev = window.relay.on('tab:prev', () => setView(v => v === 'changes' ? 'all' : v));
-    const offNext = window.relay.on('tab:next', () => setView(v => v === 'all' ? 'changes' : v));
+    const offPrev = window.relay.on('tab:prev', () => {
+      setView(v => {
+        if (v === 'changes') {
+          setIsSearching(true);
+          setSelectedIndex(0);
+          return 'all';
+        }
+        return v;
+      });
+    });
+    const offNext = window.relay.on('tab:next', () => {
+      setView(v => {
+        if (v === 'all') {
+          setChangesNavActive(true);
+          setChangesSelectedIndex(0);
+          return 'changes';
+        }
+        return v;
+      });
+    });
     return () => { offPrev(); offNext(); };
   }, []);
 
