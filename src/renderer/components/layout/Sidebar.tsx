@@ -139,6 +139,7 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
           if (item.task.type === 'branch') selectWorktree(item.task.worktree.path);
           else selectManualTask(item.task.id);
           setNavActive(false);
+          setTimeout(() => window.dispatchEvent(new CustomEvent('chat:focus')), 0);
         }
       } else if (e.key === 'Escape') {
         setNavActive(false);
