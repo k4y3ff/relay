@@ -26,6 +26,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Focus Claude',
         accelerator: 'CmdOrCtrl+Shift+C',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('focus:chat-terminal');
         },
@@ -33,6 +34,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Show Changes',
         accelerator: 'CmdOrCtrl+Shift+D',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('focus:changes-tab');
         },
@@ -40,6 +42,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Show All Files',
         accelerator: 'CmdOrCtrl+Shift+F',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('focus:all-files');
         },
@@ -47,6 +50,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Focus Terminal',
         accelerator: 'CmdOrCtrl+Shift+T',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('focus:terminal');
         },
@@ -54,6 +58,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Focus Task Groups',
         accelerator: 'CmdOrCtrl+Shift+G',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('focus:sidebar');
         },
@@ -61,6 +66,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Previous Tab',
         accelerator: 'CmdOrCtrl+Shift+[',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('tab:prev');
         },
@@ -68,6 +74,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Next Tab',
         accelerator: 'CmdOrCtrl+Shift+]',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('tab:next');
         },
@@ -75,6 +82,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Close Tab',
         accelerator: 'CmdOrCtrl+Shift+Escape',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('tab:close');
         },
@@ -82,6 +90,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'New Claude Code Tab',
         accelerator: 'CmdOrCtrl+T',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('tab:new-chat');
         },
@@ -89,6 +98,7 @@ function buildAppMenu(win: BrowserWindow): void {
       new MenuItem({
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',
+        visible: false,
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('file:save');
         },
