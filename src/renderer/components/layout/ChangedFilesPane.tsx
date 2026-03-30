@@ -203,6 +203,11 @@ export default function ChangedFilesPane({ style }: Props) {
     return () => window.removeEventListener('keydown', handler);
   }, [changesNavActive, changesSelectedIndex, files, openDiffTab]);
 
+  // Steal focus from xterm (or anywhere else) when Changes nav mode activates
+  useEffect(() => {
+    if (changesNavActive) listRef.current?.focus();
+  }, [changesNavActive]);
+
   // Auto-refresh every 3 seconds when window is focused
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -327,7 +332,7 @@ export default function ChangedFilesPane({ style }: Props) {
         </button>
       </div>
 
-      <div className="changed-files-list" ref={listRef}>
+      <div className="changed-files-list" ref={listRef} tabIndex={-1}>
         {!activeWorktreePath ? (
           <div className="changed-files-empty">Select a worktree to see {view === 'all' ? 'files' : 'changes'}</div>
         ) : view === 'all' ? (
