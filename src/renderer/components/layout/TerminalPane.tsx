@@ -173,11 +173,14 @@ export default function TerminalPane({ style }: Props) {
 
   // ⌘⇧⎋ — close the active terminal tab when focus is within the terminal pane
   useEffect(() => {
-    return window.relay.on('tab:close', () => {
-      if (shellBodyRef.current?.contains(document.activeElement)) {
-        handleCloseTab(activeTabId);
-      }
-    });
+    const handler = (e: KeyboardEvent) => {
+      if (!e.metaKey || !e.shiftKey || e.key !== 'Escape') return;
+      if (!shellBodyRef.current?.contains(document.activeElement)) return;
+      e.preventDefault();
+      handleCloseTab(activeTabId);
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
   }, [activeTabId, handleCloseTab]);
 
   // ⌘⇧T — focus the active terminal shell
