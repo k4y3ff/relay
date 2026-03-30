@@ -53,7 +53,7 @@ function buildAppMenu(win: BrowserWindow): void {
       }),
       new MenuItem({
         label: 'Keyboard Shortcuts',
-        accelerator: 'CmdOrCtrl+?',
+        accelerator: 'CmdOrCtrl+Shift+/',
         click: () => {
           if (!win.isDestroyed()) win.webContents.send('open:shortcuts-modal');
         },

@@ -10,7 +10,7 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
     heading: 'General',
     shortcuts: [
       { keys: ['⌘', ','], description: 'Settings' },
-      { keys: ['⌘', '?'], description: 'Keyboard shortcuts' },
+      { keys: ['⌘', '⇧', '/'], description: 'Keyboard shortcuts' },
     ],
   },
   {
