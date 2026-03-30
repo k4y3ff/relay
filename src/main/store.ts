@@ -13,6 +13,7 @@ interface StoreSchema {
   appTheme: string;
   editorTheme: string;
   editorWordWrap: boolean;
+  confettiEnabled: boolean;
 }
 
 export const store = new Store<StoreSchema>({
@@ -26,6 +27,7 @@ export const store = new Store<StoreSchema>({
     appTheme: 'dark',
     editorTheme: 'one-dark',
     editorWordWrap: false,
+    confettiEnabled: false,
   },
 });
 

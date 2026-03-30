@@ -261,6 +261,14 @@ export function registerIpcHandlers(win: BrowserWindow, terminal: TerminalManage
     return `data:${mime};base64,${data}`;
   });
 
+  // settings:get-confetti-enabled — return whether confetti is enabled
+  ipcMain.handle('settings:get-confetti-enabled', (): boolean => store.get('confettiEnabled'));
+
+  // settings:set-confetti-enabled — persist the confetti preference
+  ipcMain.handle('settings:set-confetti-enabled', (_event, { enabled }: { enabled: boolean }): void => {
+    store.set('confettiEnabled', enabled);
+  });
+
   // settings:get-power-mode-enabled — return whether power mode is enabled
   ipcMain.handle('settings:get-power-mode-enabled', (): boolean => store.get('powerModeEnabled', false));
 

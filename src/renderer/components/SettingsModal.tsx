@@ -28,6 +28,7 @@ export default function SettingsModal({ onClose }: Props) {
   const [notificationsEnabled, setNotificationsEnabled] = useState<boolean | null>(null);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState<boolean | null>(null);
   const [customSoundPath, setCustomSoundPath] = useState<string | null | undefined>(undefined);
+  const [confettiEnabled, setConfettiEnabled] = useState<boolean | null>(null);
   const [powerModeEnabled, setPowerModeEnabled] = useState<boolean | null>(null);
   const [editorTheme, setEditorTheme] = useState<string | null>(null);
   const [editorWordWrap, setEditorWordWrap] = useState<boolean | null>(null);
@@ -42,6 +43,9 @@ export default function SettingsModal({ onClose }: Props) {
     });
     window.relay.invoke('settings:get-custom-sound-path').then((val) => {
       setCustomSoundPath(val as string | null);
+    });
+    window.relay.invoke('settings:get-confetti-enabled').then((val) => {
+      setConfettiEnabled(val as boolean);
     });
     window.relay.invoke('settings:get-power-mode-enabled').then((val) => {
       setPowerModeEnabled(val as boolean);
@@ -85,6 +89,13 @@ export default function SettingsModal({ onClose }: Props) {
   function handleClearCustomSound() {
     setCustomSoundPath(null);
     window.relay.invoke('settings:set-custom-sound-path', { path: null });
+  }
+
+  function handleConfettiToggle() {
+    const next = !confettiEnabled;
+    setConfettiEnabled(next);
+    window.relay.invoke('settings:set-confetti-enabled', { enabled: next });
+    window.dispatchEvent(new CustomEvent('settings:confetti-changed', { detail: next }));
   }
 
   function handlePowerModeToggle() {
@@ -208,6 +219,25 @@ export default function SettingsModal({ onClose }: Props) {
             </div>
           </div>
         )}
+
+        <div className="flex items-center justify-between mt-3">
+          <span className="text-[13px] text-[var(--color-mac-text)]">Confetti when Claude finishes</span>
+          <button
+            role="switch"
+            aria-checked={confettiEnabled ?? false}
+            onClick={handleConfettiToggle}
+            disabled={confettiEnabled === null}
+            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-150 focus:outline-none disabled:opacity-50 ${
+              confettiEnabled ? 'bg-[var(--color-mac-accent)]' : 'bg-[var(--color-mac-surface2)]'
+            }`}
+          >
+            <span
+              className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-150 ${
+                confettiEnabled ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+        </div>
 
         <p className="text-[11px] font-medium text-[var(--color-mac-muted)] uppercase tracking-wide mt-4 mb-2">
           Power Mode
