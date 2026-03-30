@@ -192,8 +192,8 @@ export default function ChatPane() {
         closeChatTab(activeWorktreePath, activeChatTabId);
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
   }, [activePaneTab, closeDiffTab, activeWorktreePath, activeChatTabs, activeChatTabId, closeChatTab]);
 
   // Cmd+Shift+[ / Cmd+Shift+]: navigate left/right through the tab bar
