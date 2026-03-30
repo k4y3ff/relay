@@ -248,10 +248,10 @@ export default function ChatPane() {
     return () => { offPrev(); offNext(); };
   }, [activeChatTabs, activeChatTabId, diffTabs, activePaneTab, activeWorktreePath, setActiveChatTabByPath, selectPaneTab]);
 
-  // Cmd+Shift+Escape: close the active tab
+  // Cmd+Shift+Escape: close the active tab (only when middle pane is focused)
   useEffect(() => {
     const off = window.relay.on('tab:close', () => {
-      if (!activeWorktreePath) return;
+      if (!isMiddlePaneFocusedRef.current || !activeWorktreePath) return;
       if (activePaneTab === 'chat') {
         if (activeChatTabs.length > 1) closeChatTab(activeWorktreePath, activeChatTabId);
       } else {

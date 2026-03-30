@@ -43,6 +43,7 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
     heading: 'Terminal Pane',
     shortcuts: [
       { keys: ['⌘', 'T'], description: 'New terminal tab' },
+      { keys: ['⌘', '⇧', '⎋'], description: 'Close terminal tab' },
       { keys: ['⌘', 'K'], description: 'Clear terminal' },
     ],
   },

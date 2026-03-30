@@ -171,6 +171,15 @@ export default function TerminalPane({ style }: Props) {
     });
   }, [activeWorktreePath, handleAddTab]);
 
+  // ⌘⇧⎋ — close the active terminal tab when focus is within the terminal pane
+  useEffect(() => {
+    return window.relay.on('tab:close', () => {
+      if (shellBodyRef.current?.contains(document.activeElement)) {
+        handleCloseTab(activeTabId);
+      }
+    });
+  }, [activeTabId, handleCloseTab]);
+
   // ⌘⇧T — focus the active terminal shell
   useEffect(() => {
     return window.relay.on('focus:terminal', () => {
