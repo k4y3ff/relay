@@ -159,16 +159,6 @@ export default function ChatPane() {
   const activeChatTabs = activeWorktreePath ? (chatTabsByPath.get(activeWorktreePath) ?? []) : [];
   const activeChatTabId = activeWorktreePath ? (activeChatTabByPath.get(activeWorktreePath) ?? '') : '';
 
-  // Cmd+Shift+C: focus the active chat terminal (triggered via main-process menu accelerator)
-  useEffect(() => {
-    return window.relay.on('focus:chat-terminal', () => {
-      selectPaneTab('chat');
-      // Delay focus dispatch so React can re-render the terminal as visible first
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('terminal:focus', { detail: { terminalId: activeChatTabId } }));
-      }, 0);
-    });
-  }, [activeChatTabId, selectPaneTab]);
 
   return (
     <div className="chat-pane">

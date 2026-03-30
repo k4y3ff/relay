@@ -117,6 +117,8 @@ export default function ChangedFilesPane({ style }: Props) {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [changesNavActive, setChangesNavActive] = useState(false);
+  const [changesSelectedIndex, setChangesSelectedIndex] = useState(-1);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -171,6 +173,36 @@ export default function ChangedFilesPane({ style }: Props) {
     });
   }, []);
 
+  // Cmd+Shift+C: switch to the Changes tab and activate keyboard navigation
+  useEffect(() => {
+    return window.relay.on('focus:changes-tab', () => {
+      setView('changes');
+      setChangesNavActive(true);
+      setChangesSelectedIndex(0);
+    });
+  }, []);
+
+  // Keyboard navigation for the Changes tab
+  useEffect(() => {
+    if (!changesNavActive) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setChangesSelectedIndex(i => Math.min(i + 1, files.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setChangesSelectedIndex(i => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter') {
+        const file = files[changesSelectedIndex];
+        if (file) { openDiffTab(file); setChangesNavActive(false); }
+      } else if (e.key === 'Escape') {
+        setChangesNavActive(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [changesNavActive, changesSelectedIndex, files, openDiffTab]);
+
   // Auto-refresh every 3 seconds when window is focused
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -212,6 +244,14 @@ export default function ChangedFilesPane({ style }: Props) {
       items[selectedIndex]?.scrollIntoView({ block: 'nearest' });
     }
   }, [selectedIndex]);
+
+  // Scroll selected Changes item into view
+  useEffect(() => {
+    if (changesSelectedIndex >= 0 && listRef.current) {
+      const items = listRef.current.querySelectorAll<HTMLElement>('[data-navigable]');
+      items[changesSelectedIndex]?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [changesSelectedIndex]);
 
   const filteredFiles = searchQuery
     ? allFiles.filter(p => {
@@ -325,10 +365,11 @@ export default function ChangedFilesPane({ style }: Props) {
         ) : files.length === 0 && !loading ? (
           <div className="changed-files-empty">No changes since last commit</div>
         ) : (
-          files.map((file) => (
+          files.map((file, i) => (
             <button
               key={file.path}
-              className={`changed-files-row${activePaneTab === file.path ? ' changed-files-row-active' : ''}`}
+              data-navigable="true"
+              className={`changed-files-row${activePaneTab === file.path || (changesNavActive && i === changesSelectedIndex) ? ' changed-files-row-active' : ''}`}
               onClick={() => openDiffTab(file)}
               title={file.path}
             >

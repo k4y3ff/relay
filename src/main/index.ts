@@ -24,10 +24,10 @@ function buildAppMenu(win: BrowserWindow): void {
         },
       }),
       new MenuItem({
-        label: 'Focus Chat',
+        label: 'Show Changes',
         accelerator: 'CmdOrCtrl+Shift+C',
         click: () => {
-          if (!win.isDestroyed()) win.webContents.send('focus:chat-terminal');
+          if (!win.isDestroyed()) win.webContents.send('focus:changes-tab');
         },
       }),
       new MenuItem({
