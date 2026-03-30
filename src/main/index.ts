@@ -80,6 +80,13 @@ function buildAppMenu(win: BrowserWindow): void {
         },
       }),
       new MenuItem({
+        label: 'New Claude Code Tab',
+        accelerator: 'CmdOrCtrl+T',
+        click: () => {
+          if (!win.isDestroyed()) win.webContents.send('tab:new-chat');
+        },
+      }),
+      new MenuItem({
         label: 'Save',
         accelerator: 'CmdOrCtrl+S',
         click: () => {

@@ -40,8 +40,17 @@ const SECTIONS: { heading: string; shortcuts: { keys: string[]; description: str
     ],
   },
   {
+    heading: 'Terminal Pane',
+    shortcuts: [
+      { keys: ['⌘', 'T'], description: 'New terminal tab' },
+      { keys: ['⌘', '⇧', '⎋'], description: 'Close terminal tab' },
+      { keys: ['⌘', 'K'], description: 'Clear terminal' },
+    ],
+  },
+  {
     heading: 'Chat Pane',
     shortcuts: [
+      { keys: ['⌘', 'T'], description: 'New Claude Code tab' },
       { keys: ['⌘', '⇧', '['], description: 'Previous tab' },
       { keys: ['⌘', '⇧', ']'], description: 'Next tab' },
     ],
