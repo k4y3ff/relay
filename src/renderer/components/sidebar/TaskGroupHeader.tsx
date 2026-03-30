@@ -40,7 +40,7 @@ export default function TaskGroupHeader({ group, onAddBranch, onAddManualTask, h
   }
 
   const menuItems = [
-    { label: 'Add branch task…', action: onAddBranch },
+    { label: 'Add worktree task', action: onAddBranch },
     { label: 'Add manual task', action: onAddManualTask },
     { label: 'Rename', action: () => setRenaming(true) },
     { label: 'Delete group', danger: true, action: () => removeTaskGroup(group.id) },
