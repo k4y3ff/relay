@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { TaskStatus } from '../../types/repo';
 
 export type GroupBy = 'task-group' | 'repo' | 'status';
@@ -32,6 +32,12 @@ export default function SidebarFilterMenu({
   onClose,
 }: SidebarFilterMenuProps) {
   const ref = useRef<HTMLDivElement>(null);
+  const [navIndex, setNavIndex] = useState(0);
+
+  const allItems: Array<{ kind: 'groupBy'; value: GroupBy } | { kind: 'status'; value: TaskStatus }> = [
+    ...GROUP_BY_OPTIONS.map(o => ({ kind: 'groupBy' as const, value: o.value })),
+    ...STATUS_OPTIONS.map(o => ({ kind: 'status' as const, value: o.value })),
+  ];
 
   useEffect(() => {
     function handleMouseDown(e: MouseEvent) {
@@ -42,6 +48,34 @@ export default function SidebarFilterMenu({
     document.addEventListener('mousedown', handleMouseDown);
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [onClose]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        e.stopPropagation();
+        setNavIndex(i => Math.min(i + 1, allItems.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        setNavIndex(i => Math.max(i - 1, 0));
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        e.stopPropagation();
+        const item = allItems[navIndex];
+        if (item.kind === 'groupBy') {
+          onGroupByChange(item.value);
+        } else {
+          toggleStatus(item.value);
+        }
+      } else if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
+  }, [navIndex, allItems, onGroupByChange, onFilterStatusesChange, filterStatuses, onClose]);
 
   function toggleStatus(status: TaskStatus) {
     const next = new Set(filterStatuses);
@@ -62,10 +96,14 @@ export default function SidebarFilterMenu({
           Group by
         </p>
         <div className="flex flex-col gap-0.5">
-          {GROUP_BY_OPTIONS.map(({ value, label }) => (
+          {GROUP_BY_OPTIONS.map(({ value, label }, i) => (
             <label
               key={value}
-              className="flex items-center gap-2 text-[13px] text-[var(--color-mac-text)] py-0.5 cursor-pointer select-none"
+              className="flex items-center gap-2 text-[13px] py-0.5 cursor-pointer select-none rounded px-1"
+              style={{
+                color: navIndex === i ? 'var(--color-mac-bg)' : 'var(--color-mac-text)',
+                background: navIndex === i ? 'var(--color-mac-accent)' : undefined,
+              }}
             >
               <input
                 type="radio"
@@ -89,20 +127,27 @@ export default function SidebarFilterMenu({
           Filter by status
         </p>
         <div className="flex flex-col gap-0.5">
-          {STATUS_OPTIONS.map(({ value, label }) => (
-            <label
-              key={value}
-              className="flex items-center gap-2 text-[13px] text-[var(--color-mac-text)] py-0.5 cursor-pointer select-none"
-            >
-              <input
-                type="checkbox"
-                checked={filterStatuses.has(value)}
-                onChange={() => toggleStatus(value)}
-                className="accent-[var(--color-mac-accent)]"
-              />
-              {label}
-            </label>
-          ))}
+          {STATUS_OPTIONS.map(({ value, label }, i) => {
+            const itemIndex = GROUP_BY_OPTIONS.length + i;
+            return (
+              <label
+                key={value}
+                className="flex items-center gap-2 text-[13px] py-0.5 cursor-pointer select-none rounded px-1"
+                style={{
+                  color: navIndex === itemIndex ? 'var(--color-mac-bg)' : 'var(--color-mac-text)',
+                  background: navIndex === itemIndex ? 'var(--color-mac-accent)' : undefined,
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={filterStatuses.has(value)}
+                  onChange={() => toggleStatus(value)}
+                  className="accent-[var(--color-mac-accent)]"
+                />
+                {label}
+              </label>
+            );
+          })}
         </div>
       </div>
     </div>

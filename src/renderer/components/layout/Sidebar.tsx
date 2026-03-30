@@ -148,6 +148,8 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
   useEffect(() => {
     if (!navActive) return;
     const handler = (e: KeyboardEvent) => {
+      // Defer all keys to SidebarFilterMenu when it is open
+      if (filterMenuOpen) return;
       if (e.metaKey && !e.shiftKey && e.key === 'g') {
         e.preventDefault();
         setFilterMenuOpen((v) => !v);
@@ -193,7 +195,7 @@ export default function Sidebar({ style }: { style?: React.CSSProperties }) {
     };
     window.addEventListener('keydown', handler, true);
     return () => window.removeEventListener('keydown', handler, true);
-  }, [navActive, navIndex, navItems, searchActive, searchQuery, toggleGroupCollapsed, selectWorktree, selectManualTask]);
+  }, [navActive, navIndex, navItems, searchActive, searchQuery, filterMenuOpen, toggleGroupCollapsed, selectWorktree, selectManualTask]);
 
   // Scroll the highlighted item into view
   useEffect(() => {
